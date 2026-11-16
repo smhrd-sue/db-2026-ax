@@ -202,7 +202,7 @@ postgres=#
 
 :::teacher 강사 확인
 - `\encoding UTF8` 없이 `\i schema_postgres.sql`을 실행하면 한글 주석이 든 `CREATE TABLE`(part_master, bom_structure)에서 `0xec 0x9e 바이트로 조합된 문자(인코딩: "UHC")와 대응되는 문자 코드가 "UTF8" 인코딩에는 없습니다` 오류가 나고, 그 뒤 테이블이 연쇄로 만들어지지 않습니다. 코드표 7개와 vendor만 적재되므로 학생이 "일부만 됐다"고 하면 이 경우입니다.
-- `\encoding UTF8` 후 psql 창의 한글 출력이 깨져 보이면 psql을 열기 전 cmd에서 `chcp 65001`을 실행하거나, 한글 결과는 8절의 pgAdmin에서 확인하게 하면 됩니다.
+- 적재 후 `\encoding UHC`를 빠뜨리면 `\dn`·`\dt`의 한글 머리글이 `\xB8\xA7`, `테\u000C\xBA`처럼 깨집니다. 데이터는 정상이니 `\encoding UHC`만 입력하게 하세요.
 :::
 
 ### 5-2. psql 명령은 두 종류입니다 {keep}
@@ -259,11 +259,13 @@ You are now connected to database "bom_lab" as user "postgres".
 \cd 'C:/bom_lab'
 \encoding UTF8
 \i schema_postgres.sql
+\encoding UHC
 ```
 
 - Windows 경로지만 **역슬래시 `\` 대신 슬래시 `/`** 를 쓰고, 작은따옴표로 감쌉니다.
 - `\encoding UTF8`은 psql이 파일을 **UTF-8로 읽게** 합니다. 빠뜨리면 한글 주석에서 `"UHC" … "UTF8" 인코딩에는 없습니다` 오류가 납니다(11-1).
 - `\i`는 파일 안의 문장을 **위에서부터 한 줄씩 그대로 입력한 것처럼** 실행합니다.
+- 적재가 끝나면 `\encoding UHC`로 **화면용 인코딩을 되돌립니다**. psql 창은 949(UHC)로 글자를 그리므로, UTF8인 채로 두면 `\dt` 결과의 `이름`·`소유주` 같은 한글 머리글이 `\xB8\xA7`처럼 깨집니다. ==파일을 읽을 때는 UTF8, 화면에 볼 때는 UHC==로 기억하세요.
 
 ### 6-2. 화면에 나오는 내용 읽기 {keep}
 
@@ -581,7 +583,10 @@ PostgreSQL 서버 (localhost:5432)
 \cd 'C:/bom_lab'
 \encoding UTF8
 \i hr_postgres.sql
+\encoding UHC
 ```
+
+- 6-2와 같이 **읽을 때 UTF8 → 다 읽고 나서 UHC**로 되돌립니다.
 
 - `INSERT 0 1`은 **한 행을 넣었다**는 뜻입니다. 행마다 한 줄씩 나오므로 화면이 길게 올라갑니다.
 - 스크립트가 끝나면 `SET search_path TO hr;`이 실행된 상태입니다. 이제 이 창에서 `part_master`만 쓰면 못 찾으니, `bom` 테이블도 쓰려면 `SET search_path TO bom, hr;`을 실행하세요(10-5).
@@ -691,6 +696,7 @@ ALTER DATABASE bom_lab SET search_path TO bom, hr, public;
 | `part_master.csv: No such file or directory` | psql의 현재 폴더에 CSV가 없음 | `\cd 'C:/bom_lab'` 후 다시 `\i schema_postgres.sql` |
 | `\i` 실행 시 `schema_postgres.sql: No such file or directory` | 폴더 이동을 안 했거나 경로 오타 | 경로를 `/`로, 작은따옴표로 감쌌는지 확인 |
 | `0xec 0x9e 바이트로 조합된 문자(인코딩: "UHC")와 대응되는 문자 코드가 "UTF8" 인코딩에는 없습니다` (영문: `character with byte sequence … in encoding "UHC" has no equivalent in encoding "UTF8"`) 뒤로 `relation "part_master" does not exist`가 줄줄이 | psql이 UTF-8 스크립트를 UHC로 읽어 한글 주석이 든 `CREATE TABLE`이 실패 | `\encoding UTF8` 입력 후 `\i schema_postgres.sql` 다시 실행 |
+| `\dn`·`\dt` 결과의 한글 머리글이 `\xB8\xA7`, `테\u000C\xBA`처럼 깨짐 (영문 값은 정상) | `\encoding UTF8` 상태로 결과를 보는 중. 콘솔은 949(UHC)로 글자를 그림 | `\encoding UHC` 입력. 데이터는 정상이므로 다시 적재할 필요 없음 |
 | `relation "part_master" does not exist` | search_path가 `bom`이 아님 / 다른 DB에 접속 | `SET search_path TO bom;` 실행, 접속 DB가 `bom_lab`인지 확인 (`\conninfo`) |
 | pgAdmin에서 `\copy` 줄 syntax error | psql 전용 명령을 pgAdmin에서 실행 | 적재는 SQL Shell (psql)에서 |
 | 프롬프트가 `bom_lab-#`에서 멈춤 | SQL 끝에 `;`이 없음 | `;` 입력 후 Enter |
