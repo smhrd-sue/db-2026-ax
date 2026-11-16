@@ -457,8 +457,22 @@ unit02/09-pgadmin-password.png
 ```
 
 > 설치 프로그램이 내 PC 서버(`localhost:5432`)를 미리 등록해 두기 때문에, 접속 정보를 새로 만들 필요가 없습니다.
->
-> pgAdmin을 실행했는데 `The pgAdmin 4 server could not be contacted` 창이 뜨면 Windows 11 **스마트 앱 컨트롤**이 pgAdmin 파일을 막은 경우가 많습니다. 11-1의 해결 방법을 보세요.
+
+### 8-1. pgAdmin이 열리지 않을 때 {keep}
+
+**원인** — Windows 11의 **스마트 앱 컨트롤**이 pgAdmin 안의 파이썬 파일을 "서명이 없다"며 막아서 pgAdmin 서버가 뜨지 못합니다.
+
+:::cols
+```shot 실행하자마자 뜨는 `Fatal Error` 창
+unit02/14-pgadmin-fatal-error.png
+```
+
+1. 열린 pgAdmin 창을 모두 닫습니다. (작업 관리자에 `pgAdmin4.exe`가 남아 있으면 종료)
+2. **Windows 보안 → 앱 및 브라우저 컨트롤 → 스마트 앱 컨트롤 설정 → 끄기**
+3. pgAdmin 4를 다시 실행합니다.
+:::
+
+> 끌 때 "다시 켜려면 Windows를 재설치해야 한다"는 경고가 나올 수 있습니다. 끄기 어렵다면 조회 실습도 SQL Shell (psql)에서 그대로 할 수 있습니다.
 
 :::teacher 강사 확인
 - 스마트 앱 컨트롤이 켜진 Windows 11에서는 pgAdmin 내장 파이썬의 서명 없는 확장 파일(`.pyd`)이 차단되어 pgAdmin 서버가 뜨지 않습니다. 로그(`%APPDATA%\pgadmin4\pgadmin4.*.log`) 끝에 `ImportError: DLL load failed while importing _processors_cy`가 남고, 뒤의 한글 메시지는 깨져 보입니다.
