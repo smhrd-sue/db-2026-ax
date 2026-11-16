@@ -1,0 +1,53 @@
+{
+  "title": "SQL 수업 — 생산 현장 DB 읽기",
+  "meta": "LG전자 AX School AI 융합·생산 과정 · SQL 수업 32시간(8시간 × 4일) · PostgreSQL",
+  "groups": [
+    {
+      "name": "SQL 수업",
+      "units": [
+        {
+          "id": "unit01"
+        },
+        {
+          "id": "unit02"
+        },
+        {
+          "id": "unit03"
+        },
+        {
+          "id": "unit04"
+        },
+        {
+          "id": "unit05",
+          "label": "5",
+          "title": "연결해서 진단하기"
+        },
+        {
+          "id": "unit06",
+          "label": "6",
+          "title": "전개해서 꺼내기"
+        },
+        {
+          "id": "unit07",
+          "label": "7",
+          "title": "판단 결과 기록하기"
+        },
+        {
+          "id": "unit08",
+          "label": "8",
+          "title": "데이터 넣고 고치고 지우기"
+        },
+        {
+          "id": "unit09",
+          "label": "9",
+          "title": "묶어서 확정하고 되돌리기"
+        },
+        {
+          "id": "unit10",
+          "label": "10",
+          "title": "권한 나누기"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1013 @@
+---
+label: 2. PostgreSQL 설치
+title: PostgreSQL 설치와 실습 데이터 적재
+---
+
+# PostgreSQL 설치하기
+
+:::goal
+- PostgreSQL을 설치하고 SQL Shell (psql)로 접속할 수 있습니다.
+- `schema_postgres.sql`로 실습 DB를 만들고 행 수로 적재를 확인할 수 있습니다.
+- pgAdmin 4에서 첫 쿼리를 실행할 수 있습니다.
+- 복습으로 `hr` 샘플 데이터를 혼자 적재하고 확인할 수 있습니다.
+- 코드표로 품번·UIT·Status·UOM·Supply Type 값의 뜻을 읽을 수 있습니다.
+:::
+
+
+
+## 1. 이번 시간에 할 일
+
+### 1-1. ERD를 실제 DB로 만드는 시간 {keep}
+
+1장에서 그린 ERD·관계 모델을 **실제 DB로 만드는 시간**입니다. 1장 7. 물리적 모델링의 결과물인 `schema_postgres.sql`을 직접 실행합니다.
+
+```flow 이번 시간의 흐름
+download | 설치 | PostgreSQL 18 | ivory
+log-in | 접속 | SQL Shell (psql) | ivory
+database | 실습 DB 만들기 | bom_lab | lime
+file-spreadsheet | 데이터 적재 | 테이블 17개 | lime
+list-checks | 적재 확인 | 행 수 맞춰 보기 | plum
+search | 첫 쿼리 | pgAdmin 4 | hot
+```
+
+### 1-1. 순서와 결과
+
+| 순서 | 할 일 | 쓰는 도구 | 결과 |
+| --- | --- | --- | --- |
+| 1 | PostgreSQL 설치 | 설치 프로그램 | 내 PC에 DB 서버가 생김 |
+| 2 | 접속 | SQL Shell (psql) | `postgres` 계정으로 로그인 |
+| 3 | 실습 DB 만들기 | SQL Shell (psql) | `bom_lab` 데이터베이스 |
+| 4 | 데이터 적재 | SQL Shell (psql) | `bom` 스키마 + 테이블 17개 + 데이터 |
+| 5 | 적재 확인 | SQL Shell (psql) | 테이블별 행 수가 맞는지 확인 |
+| 6 | 첫 쿼리 | pgAdmin 4 | `part_master` 조회 |
+| 7 | 마지막 복습 | SQL Shell (psql) | `hr` 스키마 + 테이블 7개 직접 적재 |
+| 8 | 데이터 탐색 | pgAdmin 4 | 품번·UIT·Status·UOM·Supply Type 코드 읽기 |
+
+## 2. 설치 전에 알아 둘 것 — 서버와 클라이언트
+
+### 2-1. 서버 하나, 도구 둘 {keep}
+
+DB는 **데이터를 보관하는 프로그램(서버)** 과 **서버에 접속해 SQL을 보내는 프로그램(클라이언트)** 으로 나뉩니다. 이번에 설치하는 것은 세 가지입니다.
+
+```icons 이번에 설치하는 세 가지
+si:postgresql | PostgreSQL Server | 데이터를 저장하고 SQL을 실제로 실행하는 본체. Windows 서비스로 계속 켜져 있음 | #4169E1 | [비유] 창고
+square-terminal | SQL Shell (psql) | 글자로 명령을 입력하는 클라이언트. `\copy` 같은 **psql 전용 명령**을 쓸 수 있음 | lime | [비유] 창고 관리 단말기
+monitor | pgAdmin 4 | 마우스로 테이블을 보고 쿼리를 실행하는 그래픽 클라이언트 | plum | [비유] 창고 관리 화면
+```
+
+> 두 도구가 같은 서버에 접속합니다. 데이터 **적재는 psql**, 이후 **조회 실습은 pgAdmin**으로 나눠 씁니다. 적재 스크립트가 psql에서만 동작하는 `\copy` 명령을 쓰기 때문입니다(6-3에서 다룹니다).
+
+## 3. PostgreSQL 설치 (Windows)
+
+### 3-1. 설치 파일 받기 {keep}
+
+1. [postgresql.org/download/windows](https://www.postgresql.org/download/windows/) 접속
+2. **Download the installer** (EDB에서 제공하는 설치 프로그램) 클릭
+3. 버전 **18**, 운영체제 **Windows x86-64** 파일을 내려받기
+
+```shot ① postgresql.org — Windows installers 페이지. 맨 위 「Download the installer」를 누릅니다.
+unit02/01-download-windows.png
+```
+
+### 3-1. EDB 다운로드 표에서 고르기 {keep}
+
+```shot ② EDB 다운로드 표 — 18.x 행의 「Windows x86-64」 열 아이콘을 누릅니다. (캡처 시점 최신은 18.6)
+unit02/02-edb-installer.png
+```
+
+> 공식 다운로드 페이지는 Windows용 설치 프로그램으로 PostgreSQL 13~18을 제공하며, 설치 프로그램에 **PostgreSQL 서버·pgAdmin·StackBuilder**가 함께 들어 있다고 안내합니다.
+> 내려받을 때 회원가입이나 로그인은 필요하지 않습니다.
+
+### 3-2. 설치 마법사 따라가기
+
+내려받은 `postgresql-18.x-x-windows-x64.exe`를 **마우스 오른쪽 클릭 → 관리자 권한으로 실행**합니다.
+
+| 단계 | 화면 | 이렇게 합니다 |
+| --- | --- | --- |
+| 1 | Setup (시작) | Next |
+| 2 | Installation Directory | 기본값 그대로 Next |
+| 3 | Select Components | **4개 모두 체크 유지** — PostgreSQL Server, pgAdmin 4, Stack Builder, Command Line Tools |
+| 4 | Data Directory | 기본값 그대로 Next |
+| 5 | Password | `postgres` 계정 비밀번호 입력 → ==수업용은 모두 `12345`로 통일== |
+| 6 | Port | **5432** 그대로 |
+| 7 | Advanced Options (Locale) | 기본값(Default locale) 그대로 |
+| 8 | Pre Installation Summary | 내용 확인 후 Next |
+| 9 | Installing | 끝날 때까지 기다리기 |
+| 10 | Completing | **Stack Builder 체크 해제** 후 Finish (이번 수업에는 추가 설치가 필요 없음) |
+
+### 3-2. 꼭 확인할 화면 ① 구성 요소 · 비밀번호 {keep}
+
+:::cols
+```shot 3단계 Select Components — 4개 모두 체크된 상태 그대로
+unit02/03-select-components.png
+```
+
+```shot 5단계 Password — 같은 비밀번호를 두 번 입력 (수업용 `12345`)
+unit02/04-password.png
+```
+:::
+
+### 3-2. 꼭 확인할 화면 ② 포트 · 마침 {keep}
+
+:::cols
+```shot 6단계 Port — 5432 그대로
+unit02/05-port.png
+```
+
+```shot 10단계 Completing — Stack Builder 체크 해제 후 Finish
+unit02/06-completing.png
+```
+:::
+
+> **비밀번호는 꼭 기억하세요.** psql·pgAdmin으로 접속할 때마다 입력합니다. 잊어버리면 다시 설정하는 과정이 번거롭습니다.
+
+### 3-3. 설치 확인 {keep}
+
+Windows 시작 메뉴에서 **PostgreSQL 18** 폴더를 열면 아래 두 개가 보여야 합니다.
+
+- **SQL Shell (psql)**
+- **pgAdmin 4**
+
+```shot 설치 후 생긴 PostgreSQL 18 폴더 — SQL Shell (psql) · pgAdmin 4가 보이면 성공 (맥 화면 · Windows는 시작 메뉴의 같은 이름 폴더)
+unit02/07-start-menu.png
+```
+
+:::teacher 강사 확인
+- Mac 사용 훈련생이 있으면 [postgresql.org/download/macosx](https://www.postgresql.org/download/macosx/)에서 설치 방법을 고르게 합니다. 이 교안의 화면·경로는 Windows 기준입니다.
+- 설치가 오래 걸리는 PC가 있으므로 설치 파일을 미리 내려받아 공유 폴더·USB로 나눠 주면 시간을 줄일 수 있습니다.
+:::
+
+## 4. 실습 폴더 준비
+
+### 4-1. 스크립트와 CSV를 한 폴더에 {keep}
+
+`\copy` 명령은 **psql이 지금 있는 폴더**를 기준으로 CSV 파일을 찾습니다. 그래서 적재 스크립트와 CSV 17개를 **한 폴더**에 모아 둡니다.
+
+1. `C:\bom_lab` 폴더를 만듭니다.
+2. [{{ic:download}} 실습 자료 내려받기 (Google Drive)](https://drive.google.com/drive/folders/17UrEDgKNiYYt4ewRip8qfxExgHazR8t9?usp=sharing)에서 SQL 1개와 CSV 17개를 받아 모두 이 폴더에 넣습니다.
+
+```text 실습 폴더
+C:\bom_lab
+├─ schema_postgres.sql          ← 적재 스크립트 (물리적 모델링 결과물)
+├─ part_master.csv  vendor.csv  bom_structure.csv  part_sourcing.csv
+├─ site_part_attr.csv  uit_change_history.csv  part_status_history.csv
+├─ production_plan.csv  inventory.csv  scheduled_receipt.csv
+└─ code_uit.csv  code_uom.csv  code_status.csv  code_supply_type.csv
+   code_line_type.csv  code_svc.csv  code_cosp.csv          (CSV 총 17개)
+```
+
+> ==폴더 경로에 한글과 띄어쓰기를 넣지 마세요.== `바탕 화면\DB 수업`처럼 한글·공백이 있으면 경로를 따옴표로 정확히 감싸야 해서 실수가 잦습니다. `C:\bom_lab`처럼 짧은 영문 경로를 권장합니다.
+
+# 실습데이터 적재하기 
+
+## 5. SQL Shell (psql)로 접속하기
+
+### 5-1. 기본값은 Enter, 비밀번호만 입력 {keep}
+
+시작 메뉴 → **SQL Shell (psql)** 실행. 검은 창에 아래 질문이 차례로 나옵니다. 대괄호 `[ ]` 안이 기본값이며, **Enter만 누르면 기본값**이 들어갑니다.
+
+```text psql 접속 화면
+Server [localhost]:          ← Enter
+Database [postgres]:         ← Enter
+Port [5432]:                 ← Enter
+Username [postgres]:         ← Enter
+Password for user postgres:  ← 설치할 때 정한 비밀번호 입력 (화면에 안 보이는 게 정상) 후 Enter
+```
+
+(한국어 Windows에서는 비밀번호 질문이 한국어로 나올 수 있습니다.)
+
+접속에 성공하면 맨 아래에 `postgres=#` 가 보입니다. `postgres`는 **지금 접속한 데이터베이스 이름**입니다.
+
+### 5-1. 접속 성공 화면 {keep}
+
+```screen SQL Shell (psql) 접속 성공 예시 — 맨 아래 postgres=# 가 보이면 성공
+Server [localhost]:
+Database [postgres]:
+Port [5432]:
+Username [postgres]:
+Password for user postgres:
+
+psql (18.x)
+WARNING: Console code page (949) differs from Windows code page (…)
+         8-bit characters might not work correctly. See psql reference
+         page "Notes for Windows users" for details.
+Type "help" for help.
+
+postgres=#
+```
+
+> 비밀번호를 입력해도 글자가 나타나지 않는 것은 보안 때문입니다. 그대로 입력하고 Enter를 누르세요.
+>
+> 맨 위에 `Console code page (949) differs from Windows code page …` 같은 경고가 보일 수 있습니다. 화면 문자 코드에 대한 안내이며, 이번 적재는 스크립트가 CSV를 `UTF8`로 읽도록 지정되어 있어 그대로 진행해도 됩니다.
+
+:::teacher 강사 확인
+- 위 코드페이지 경고가 뜬 상태에서 psql 창의 한글 출력이 깨지는지는 수업 PC에서 미리 확인하세요. 깨지더라도 데이터 자체는 `ENCODING 'UTF8'`로 적재되므로, 한글이 들어간 결과는 8절의 pgAdmin에서 확인하게 하면 됩니다.
+:::
+
+### 5-2. psql 명령은 두 종류입니다 {keep}
+
+```icons
+braces | SQL 문 | 일반 영어 문장. 끝에 **세미콜론 `;` 필수** | plum | `CREATE DATABASE bom_lab;`
+square-terminal | psql 메타 명령 | 역슬래시 `\` 로 시작. `;` 없이 Enter로 끝 | lime | `\c bom_lab` · `\dt` · `\q`
+```
+
+> `;` 없이 Enter를 누르면 프롬프트가 `postgres-#` 로 바뀌며 **명령이 끝나지 않았다**고 기다립니다. 이때 `;`만 입력하고 Enter를 누르면 실행됩니다.
+
+### 5-2. 자주 쓰는 메타 명령
+
+| 명령 | 뜻 |
+| --- | --- |
+| `\l` | 데이터베이스 목록 |
+| `\c DB이름` | 다른 데이터베이스로 접속 |
+| `\conninfo` | 지금 어디에 누구로 접속했는지 |
+| `\dn` | 스키마 목록 |
+| `\dt` | 테이블 목록 |
+| `\cd '폴더'` | psql의 현재 폴더 바꾸기 |
+| `\i 파일` | SQL 파일을 읽어 그대로 실행 |
+| `\q` | psql 종료 |
+
+## 6. 실습 DB 만들고 데이터 적재하기
+
+### 6-1. 실습용 데이터베이스 만들기 {keep}
+
+기본 DB인 `postgres`는 그대로 두고, 실습 전용 DB `bom_lab`을 새로 만듭니다.
+
+```sql
+CREATE DATABASE bom_lab;
+```
+
+```result
+CREATE DATABASE
+```
+
+방금 만든 DB로 옮겨 접속합니다.
+
+```psql
+\c bom_lab
+```
+
+```result
+You are now connected to database "bom_lab" as user "postgres".
+```
+
+(한국어 Windows에서는 같은 뜻의 한국어 문장으로 보일 수 있습니다.) 프롬프트가 `bom_lab=#` 으로 바뀌면 성공입니다.
+
+### 6-2. 폴더로 이동한 뒤 스크립트 실행 {keep}
+
+```psql
+\cd 'C:/bom_lab'
+\i schema_postgres.sql
+```
+
+- Windows 경로지만 **역슬래시 `\` 대신 슬래시 `/`** 를 쓰고, 작은따옴표로 감쌉니다.
+- `\i`는 파일 안의 문장을 **위에서부터 한 줄씩 그대로 입력한 것처럼** 실행합니다.
+
+### 6-2. 화면에 나오는 내용 읽기 {keep}
+
+```result 화면에 나오는 내용 (일부)
+psql:schema_postgres.sql:6: NOTICE:  schema "bom" does not exist, skipping
+DROP SCHEMA
+CREATE SCHEMA
+SET
+CREATE TABLE
+CREATE TABLE
+…
+COPY 11
+COPY 7
+COPY 6
+…
+COPY 68
+…
+```
+
+- 처음 실행할 때 나오는 `NOTICE … does not exist, skipping`은 오류가 아닙니다. “지울 `bom` 스키마가 아직 없어서 건너뛴다”는 뜻입니다.
+- `COPY 숫자`는 **그 테이블에 들어간 행 수**입니다. 7-2에서 기대값과 맞춰 봅니다.
+
+### 6-3. 스크립트는 무슨 일을 했나요? {keep}
+
+`schema_postgres.sql`은 1장에서 배운 **물리적 모델링 결과물**입니다. 위에서부터 이 순서로 실행됩니다.
+
+```flow
+trash-2 | DROP SCHEMA | 예전 bom 지우기 | ivory
+folder-tree | CREATE SCHEMA | bom 폴더 만들기 | ivory
+map | SET search_path | bom. 생략 | ivory
+table | CREATE TABLE × 17 | PK·FK 생성 | hot
+file-spreadsheet | \copy × 17 | CSV → 테이블 | lime
+```
+
+### 6-3. 문장별로 보기
+
+| 순서 | 문장 | 하는 일 |
+| --- | --- | --- |
+| 1 | `DROP SCHEMA IF EXISTS bom CASCADE;` | 예전 `bom` 스키마가 있으면 통째로 지움 → **다시 실행해도 처음 상태로** 돌아감 |
+| 2 | `CREATE SCHEMA bom;` | 테이블을 담을 `bom` 스키마(폴더)를 만듦 |
+| 3 | `SET search_path TO bom;` | 이후 테이블 이름 앞에 `bom.`을 안 붙여도 되게 함 |
+| 4 | `CREATE TABLE …` × 17 | 코드표 7개 → 마스터 → BOM → 소싱·이력 → 계획·재고 순서로 테이블 생성. ==PK·FK(`REFERENCES`)가 여기서 실제로 만들어짐== |
+| 5 | `\copy … FROM '….csv' CSV HEADER ENCODING 'UTF8'` × 17 | CSV 파일을 읽어 테이블에 데이터를 넣음 |
+
+### 6-3. 왜 코드표부터 넣을까요? {keep}
+
+`part_master.uit`는 `code_uit`를 참조하는 FK입니다. 부모(코드표)가 먼저 있어야 자식(part_master)에 값을 넣을 수 있습니다(1장 6-1 참조 무결성). 순서를 바꾸면 FK 위반 오류가 납니다.
+
+```flow
+list | 코드표 | code_uit 등 (부모) | lime
+package | part_master | uit → code_uit (자식) | plum
+```
+
+:::note \copy 옵션 읽기
+- `CSV` — 쉼표로 구분된 파일
+- `HEADER` — 첫 줄은 컬럼 이름이므로 건너뜀
+- `ENCODING 'UTF8'` — 파일 글자 코드가 UTF-8 (한글 품명이 깨지지 않게)
+- `NULL ''` — 빈 칸은 NULL로 넣음 (`part_master`, `part_sourcing`만 지정 → `svc_code`, `po_price`의 빈 값)
+:::
+
+### 6-4. DB · 스키마 · 테이블의 관계 {keep}
+
+```text 서버 > DB > 스키마 > 테이블
+PostgreSQL 서버 (localhost:5432)
+ ├─ postgres        ← 기본 DB
+ └─ bom_lab         ← 우리가 만든 DB
+     ├─ public      ← 기본 스키마 (비어 있음)
+     └─ bom         ← 스크립트가 만든 스키마
+         ├─ part_master
+         ├─ bom_structure
+         └─ … (테이블 17개)
+```
+
+> 스키마는 **DB 안의 폴더**입니다. 같은 DB 안에서 테이블을 묶어 관리합니다. 테이블의 정식 이름은 `bom.part_master`처럼 `스키마.테이블`입니다.
+
+## 7. 적재 확인
+
+### 7-1. 스키마와 테이블 목록 {keep}
+
+:::cols
+```psql 결과에 테이블 17개가 보이면 성공
+\dn
+\dt bom.*
+```
+
+```shot `\dt bom.*` 실행 결과 — 맨 아래 (17 rows)
+unit02/08-dt-tables.png
+```
+:::
+
+### 7-2. 테이블별 행 수 맞춰 보기
+
+```sql 테이블별 행 수 (17개)
+SELECT 'part_master' AS 테이블, COUNT(*) AS 행수 FROM bom.part_master
+UNION ALL SELECT 'bom_structure',       COUNT(*) FROM bom.bom_structure
+UNION ALL SELECT 'vendor',              COUNT(*) FROM bom.vendor
+UNION ALL SELECT 'part_sourcing',       COUNT(*) FROM bom.part_sourcing
+UNION ALL SELECT 'site_part_attr',      COUNT(*) FROM bom.site_part_attr
+UNION ALL SELECT 'uit_change_history',  COUNT(*) FROM bom.uit_change_history
+UNION ALL SELECT 'part_status_history', COUNT(*) FROM bom.part_status_history
+UNION ALL SELECT 'production_plan',     COUNT(*) FROM bom.production_plan
+UNION ALL SELECT 'inventory',           COUNT(*) FROM bom.inventory
+UNION ALL SELECT 'scheduled_receipt',   COUNT(*) FROM bom.scheduled_receipt
+UNION ALL SELECT 'code_uit',            COUNT(*) FROM bom.code_uit
+UNION ALL SELECT 'code_uom',            COUNT(*) FROM bom.code_uom
+UNION ALL SELECT 'code_status',         COUNT(*) FROM bom.code_status
+UNION ALL SELECT 'code_supply_type',    COUNT(*) FROM bom.code_supply_type
+UNION ALL SELECT 'code_line_type',      COUNT(*) FROM bom.code_line_type
+UNION ALL SELECT 'code_svc',            COUNT(*) FROM bom.code_svc
+UNION ALL SELECT 'code_cosp',           COUNT(*) FROM bom.code_cosp;
+```
+
+### 7-2. 기대값 {keep}
+
+```stats 제공 CSV 행 수 기준
+table | 17 | 테이블
+rows-3 | 360 | 전체 행
+package | 68 | 부품
+list-tree | 82 | BOM 라인
+```
+
+| 그룹 | 테이블 | 행 수 |
+| --- | --- | --- |
+| 마스터 | `part_master` · `vendor` | 68 · 12 |
+| BOM·소싱 | `bom_structure` · `part_sourcing` · `site_part_attr` | 82 · 52 · 16 |
+| 계획·재고 | `production_plan` · `inventory` · `scheduled_receipt` | 20 · 53 · 6 |
+| 이력 | `uit_change_history` · `part_status_history` | 5 · 5 |
+| 코드표 | `code_uit` · `code_uom` · `code_status` · `code_supply_type` · `code_line_type` · `code_svc` · `code_cosp` | 11 · 7 · 6 · 3 · 9 · 2 · 3 |
+
+### 7-3. search_path — 매번 bom.을 붙여야 하나요? {keep}
+
+**`search_path`** 는 테이블 이름만 썼을 때 PostgreSQL이 **어느 스키마에서 그 테이블을 찾을지** 정한 순서입니다. 실습 테이블은 모두 `bom` 스키마 안에 있으므로 정식 이름은 `bom.part_master`처럼 `스키마.테이블`입니다.
+
+```sql
+SELECT * FROM bom.part_master;    -- 스키마를 직접 적음 → 항상 찾음
+SELECT * FROM part_master;        -- 스키마 생략 → search_path에 있는 스키마에서 찾음
+```
+
+| 상태 | `search_path` | `part_master`만 썼을 때 |
+| --- | --- | --- |
+| 기본값 | `"$user", public` (접속 계정 이름의 스키마 → `public`) | `bom`을 찾지 않아 ==테이블을 못 찾음== |
+| `SET search_path TO bom;` 실행 후 | `bom` | `bom.part_master`를 찾음 |
+
+### 7-3. bom 폴더 안에 들어가 있는 상태 {keep}
+
+폴더에 빗대면 **`bom` 폴더 안으로 들어가 있는 상태**입니다. 그 안에서는 파일 이름만 불러도 찾을 수 있습니다.
+
+지금 설정은 아래 명령으로 확인합니다.
+
+```sql
+SHOW search_path;
+```
+
+스크립트 안의 `SET search_path TO bom;`은 **그 접속에서만** 유효합니다. psql을 껐다 켜거나 pgAdmin에서 새로 접속하면 다시 기본값으로 돌아가, `part_master`만 쓰면 테이블을 못 찾습니다.
+
+```error
+ERROR:  relation "part_master" does not exist
+```
+
+### 7-3. 해결 방법 두 가지 {keep}
+
+```sql ① 접속할 때마다 한 번 실행 (운영안 방식)
+SET search_path TO bom;
+```
+
+```sql ② bom_lab DB의 기본값으로 저장 (한 번만 실행하면 다음 접속부터 적용)
+ALTER DATABASE bom_lab SET search_path TO bom, public;
+```
+
+> ②를 실행한 뒤에는 **새로 접속한 창부터** 적용됩니다. 지금 창에는 ①을 한 번 더 실행하세요.
+
+:::teacher 강사 확인
+- 운영안은 ①(`SET search_path TO bom;`)을 기준으로 합니다. ②를 수업 표준으로 쓸지는 강사가 정해 주세요. ②를 쓰면 pgAdmin 실습 중 `relation … does not exist` 질문이 크게 줄어듭니다.
+- README 3장 안내대로, `exercises_mysql.sql`을 PostgreSQL에서 쓸 때는 `bom.` 접두사를 붙이거나 search_path를 설정해야 합니다.
+:::
+
+# 실습데이터 조회하기
+
+## 8. pgAdmin 4로 접속하기
+
+### 8-1. 서버 접속 {keep}
+
+1. 시작 메뉴 → **pgAdmin 4** 실행 (첫 실행은 조금 오래 걸립니다)
+2. 왼쪽 **Servers** 앞의 `>` 클릭 → **PostgreSQL 18** 클릭
+3. 비밀번호 입력 창에 설치 때 정한 비밀번호 입력 → (선택) **Save Password** 체크 → OK
+
+```shot Connect to Server — 비밀번호 입력 · Save Password 체크 후 OK
+unit02/09-pgadmin-password.png
+```
+
+> 설치 프로그램이 내 PC 서버(`localhost:5432`)를 미리 등록해 두기 때문에, 접속 정보를 새로 만들 필요가 없습니다.
+
+### 8-2. 테이블 확인 — 왼쪽 트리 펼치기 {keep}
+
+```text pgAdmin 왼쪽 트리
+Servers > PostgreSQL 18 > Databases > bom_lab > Schemas > bom > Tables
+```
+
+`Tables (17)` 이 보이면 적재가 끝난 상태입니다.
+
+> 테이블이 안 보이면 **bom_lab** 또는 **Tables**에서 마우스 오른쪽 클릭 → **Refresh**.
+
+### 8-2. 트리를 펼친 화면 {keep}
+
+:::cols
+```shot ① Servers → PostgreSQL 18 → bom_lab → Schemas → bom → Tables (17)
+unit02/10-tree-open.png
+```
+
+```shot ② Tables (17)을 펼치면 테이블 17개
+unit02/11-tree-tables.png
+```
+:::
+
+### 8-3. 쿼리 창 열기 {keep}
+
+:::cols
+1. 트리에서 **bom_lab** 클릭 (어느 DB에 쿼리를 보낼지 고르는 것)
+2. 위쪽 메뉴 **Tools → Query Tool**
+3. 쿼리를 쓰고 **F5** 또는 ▶ (Execute) 버튼으로 실행
+
+```shot Tools 메뉴 → Query Tool
+unit02/12-tools-menu.png
+```
+:::
+
+### 8-3. Query Tool 화면 {keep}
+
+:::cols
+```shot Query Tool — 위: 쿼리 입력(Query), 아래: 실행 결과(Data Output)
+unit02/13-query-tool.png
+```
+
+> 쿼리 창 제목에 `bom_lab/postgres@PostgreSQL 18`처럼 **DB 이름/계정**이 보입니다. 여기가 `postgres`로 되어 있으면 엉뚱한 DB에 접속한 것입니다.
+:::
+
+### 8-4. 적재는 psql, 조회는 pgAdmin {keep}
+
+:::error
+`schema_postgres.sql`을 pgAdmin Query Tool에 붙여 넣고 실행하면 `\copy` 줄에서 오류가 납니다. `\copy`는 **psql 전용 메타 명령**이라 pgAdmin은 이해하지 못합니다(스크립트에도 「psql 전용 메타커맨드」라고 적혀 있습니다). ==적재는 psql, 조회는 pgAdmin==으로 나눠 쓰세요.
+:::
+
+## 9. 첫 쿼리
+
+### 9-1. part_master 10행 보기 {keep}
+
+pgAdmin Query Tool에서 실행합니다.
+
+```sql
+SET search_path TO bom;    -- 7-3에서 ②를 했다면 생략 가능
+
+SELECT * FROM part_master LIMIT 10;
+```
+
+- `SELECT *` — 모든 컬럼을
+- `FROM part_master` — 품목 마스터 테이블에서
+- `LIMIT 10` — 10행만 보여 줘
+
+### 9-1. 실행 결과 {keep}
+
+```result 앞 5행, 일부 컬럼만 표시
+| part_no | description | description_kr | uom | uit | status_code |
+| --- | --- | --- | --- | --- | --- |
+| FSC67181101 | Screw,Customized | 나사 M4x12 | EA | G | 3 |
+| FSC33042701 | Screw,Customized | 나사 M5x16 | EA | G | 3 |
+| FTP68745401 | Tape,Filament | 필라멘트 테이프 | MZ | G | 3 |
+| RRS44997401 | Resin,ABS | ABS 수지 | KG | G | 3 |
+| RPP53183301 | Resin,PP | PP 수지 | KG | G | 3 |
+```
+
+> `ORDER BY`(정렬)를 쓰지 않았으므로 **행 순서는 보장되지 않습니다.** 방금 적재한 DB에서는 보통 CSV 순서대로 나오지만, 다른 행이 보여도 오류가 아닙니다.
+
+### 9-2. 1장과 연결해서 읽어 보기 {keep}
+
+- `part_no` = 1장 5-2 예시 ③의 **품번**, `part_master`의 **PK**
+- `uom`, `uit`, `status_code` = 각각 `code_uom`, `code_uit`, `code_status`를 참조하는 **FK** (1장 8-4 FK 정리표)
+- `uit`가 `G`인 행 → `code_uit`에서 `G`의 뜻을 찾으면 됩니다. 이렇게 **두 테이블을 잇는 방법(JOIN)** 을 뒤에서 배웁니다.
+
+### 9-3. 직접 해 보기 {keep}
+
+:::try 직접 해 보기
+1. `vendor` 테이블 전체를 조회해 보세요. 행이 몇 개 나오나요?
+2. `code_uit` 테이블을 조회해 `G`와 `D`가 각각 무슨 뜻인지 찾아보세요.
+3. pgAdmin 왼쪽 트리에서 `part_sourcing` → **Constraints**를 펼쳐 PK와 FK가 몇 개 있는지 확인해 보세요. 1장 8-4 관계 모델 그림과 비교합니다.
+:::
+
+:::answer
+1. 12행 (`SELECT * FROM vendor;`)
+2. `SELECT * FROM code_uit;` — `meaning_kr` 컬럼에서 확인합니다.
+3. PK 1개(`part_no + vendor_code + site_code` 복합키), FK 3개(`part_no` → `part_master`, `vendor_code` → `vendor`, `line_type` → `code_line_type`). `schema_postgres.sql`의 `part_sourcing` 정의와 같습니다.
+:::
+
+## 10. 마지막 복습 — hr 데이터도 적재하기
+
+### 10-1. 같은 순서로 한 번 더 — 파일 준비 {keep}
+
+지금까지 한 순서(**파일 준비 → psql 접속 → `\i` 실행 → 적재 확인**)를 직원·부서 인사(HR) 샘플 데이터로 **한 번 더 혼자** 해 봅니다. 같은 `bom_lab` DB 안에 `hr` 스키마를 하나 더 만듭니다.
+
+:::cols
+```text 같은 DB에 스키마 하나 더
+PostgreSQL 서버 (localhost:5432)
+ └─ bom_lab
+     ├─ public
+     ├─ bom      ← 앞에서 적재 (테이블 17개)
+     └─ hr       ← 이번에 적재 (테이블 7개 + 뷰 1개)
+```
+
+> **파일 준비** — `hr_postgres.sql`을 `C:\bom_lab` 폴더에 복사합니다. 이 스크립트는 CSV 없이 **`INSERT` 문으로 데이터를 넣기 때문에** 파일 하나만 있으면 됩니다.
+:::
+
+### 10-2. psql에서 실행 {keep}
+
+```psql
+\c bom_lab
+\cd 'C:/bom_lab'
+\i hr_postgres.sql
+```
+
+- `INSERT 0 1`은 **한 행을 넣었다**는 뜻입니다. 행마다 한 줄씩 나오므로 화면이 길게 올라갑니다.
+- 스크립트가 끝나면 `SET search_path TO hr;`이 실행된 상태입니다. 이제 이 창에서 `part_master`만 쓰면 못 찾으니, `bom` 테이블을 쓰려면 다시 `SET search_path TO bom;`을 실행하세요.
+
+### 10-2. 화면에 나오는 내용 {keep}
+
+```result 화면에 나오는 내용 (일부)
+psql:hr_postgres.sql:…: NOTICE:  schema "hr" does not exist, skipping
+DROP SCHEMA
+CREATE SCHEMA
+SET
+CREATE TABLE
+…
+INSERT 0 1
+INSERT 0 1
+…
+ALTER TABLE
+CREATE INDEX
+…
+CREATE VIEW
+…
+COMMENT
+```
+
+### 10-3. 스크립트는 무슨 일을 했나요? {keep}
+
+| 순서 | 문장 | 하는 일 | 앞에서 배운 것 |
+| --- | --- | --- | --- |
+| 1 | `DROP SCHEMA IF EXISTS hr CASCADE;` · `CREATE SCHEMA hr;` | `hr` 스키마를 새로 만듦 | 6-3과 같음 |
+| 2 | `CREATE TABLE …` × 7 | `regions` → `countries` → `locations` → `departments` → `jobs` → `employees` → `job_history` 순서로 생성 | ==부모 먼저, 자식 나중== |
+| 3 | `INSERT INTO … VALUES (…);` | 데이터를 한 행씩 넣음 | `\copy` 대신 SQL 문으로 넣는 방법 |
+| 4 | `ALTER TABLE departments ADD CONSTRAINT dept_mgr_fk …` | 부서장(`manager_id`) → 직원 FK를 **데이터를 다 넣은 뒤** 추가 | 부서와 직원이 서로를 참조하기 때문 |
+| 5 | `CREATE INDEX` · `CREATE VIEW` · `COMMENT ON` | 검색용 인덱스, 조인 뷰 `emp_details_view`, 테이블·컬럼 설명 | 1장 7. 물리적 모델링(인덱스) |
+
+### 10-3. 4번은 왜 나중에 할까요? {keep}
+
+부서는 부서장(직원)을, 직원은 소속 부서를 참조합니다. 둘 다 처음부터 FK를 걸면 **어느 쪽도 먼저 넣을 수 없습니다.** 그래서 데이터를 다 넣은 뒤 FK 하나를 추가합니다.
+
+```icons 서로를 참조하는 두 테이블
+building-2 | departments | 부서장(`manager_id`)이 **직원**을 참조 | plum | [FK] `dept_mgr_fk` — 나중에 추가
+users | employees | 소속 부서가 **부서**를 참조 | lime | [FK] `emp_dept_fk` — 테이블 만들 때
+```
+
+### 10-4. 직접 확인해 보기 {keep}
+
+:::try 직접 해 보기
+1. `\dn`으로 스키마 목록을 보고, `bom`과 `hr`이 둘 다 있는지 확인하세요.
+2. `\dt hr.*`로 `hr` 스키마의 테이블이 몇 개인지 세어 보세요. 뷰는 `\dv hr.*`로 봅니다.
+3. 다음 장의 쿼리를 실행해 행 수가 기대값과 같은지 확인하세요.
+4. pgAdmin 왼쪽 트리에서 `bom_lab > Schemas > hr > Tables > employees > Constraints`를 펼쳐 FK가 몇 개이고, 각각 어느 테이블을 가리키는지 적어 보세요.
+5. `job_history`의 PK는 컬럼 몇 개로 이루어져 있나요? 1장에서 배운 용어로 무엇이라고 부르나요?
+:::
+
+:::answer
+1. `bom`, `hr`, `public` 세 개가 보입니다.
+2. 테이블 7개, 뷰 1개(`emp_details_view`)
+3. 다음 장의 기대값과 같으면 성공입니다.
+4. FK 3개 — `emp_dept_fk`(→ `departments`), `emp_job_fk`(→ `jobs`), `emp_manager_fk`(→ `employees` **자기 자신**). 직원의 매니저도 직원이라 같은 테이블을 참조합니다. `bom_structure`가 `part_master`를 부모·자식으로 참조하는 것과 비슷한 구조입니다.
+5. 2개(`employee_id + start_date`) → **복합키**. `employee_id`는 `employees`를 참조하는 FK이면서 PK의 일부이므로 `employees`와 `job_history`는 **식별 관계**입니다.
+:::
+
+### 10-4. hr 테이블별 행 수 {keep}
+
+```sql hr 테이블별 행 수 (7개)
+SELECT 'regions' AS 테이블, COUNT(*) AS 행수 FROM hr.regions
+UNION ALL SELECT 'countries',   COUNT(*) FROM hr.countries
+UNION ALL SELECT 'locations',   COUNT(*) FROM hr.locations
+UNION ALL SELECT 'departments', COUNT(*) FROM hr.departments
+UNION ALL SELECT 'jobs',        COUNT(*) FROM hr.jobs
+UNION ALL SELECT 'employees',   COUNT(*) FROM hr.employees
+UNION ALL SELECT 'job_history', COUNT(*) FROM hr.job_history;
+```
+
+**기대값** (`hr_postgres.sql` 머리말 기준, 합계 215행)
+
+| 테이블 | `regions` | `countries` | `locations` | `departments` | `jobs` | `employees` | `job_history` |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 행 수 | 4 | 25 | 23 | 27 | 19 | 107 | 10 |
+
+### 10-5. 두 스키마를 함께 쓰려면 {keep}
+
+`search_path`에는 스키마를 **여러 개** 적을 수 있습니다. 적은 순서대로 찾습니다.
+
+```sql ① 지금 창에서만
+SET search_path TO bom, hr;
+```
+
+```sql ② bom_lab DB의 기본값으로 저장 (7-3 ②를 대신함)
+ALTER DATABASE bom_lab SET search_path TO bom, hr, public;
+```
+
+> `bom`의 테이블 17개와 `hr`의 테이블 7개는 이름이 겹치지 않으므로, 두 스키마를 함께 적어도 `part_master`와 `employees`를 각각 찾습니다.
+
+:::teacher 강사 확인
+- `hr_postgres.sql` 머리말 기준: PostgreSQL 13 이상 대상, 16에서 실행 검증. 수업 PC(18)에서 미리 한 번 실행해 확인하세요.
+- 스크립트 머리말에 원본(`github.com/oracle-samples/db-sample-schemas`, MIT License) 표기가 있으므로 배포 시 머리말을 지우지 마세요.
+- 이 스크립트는 `\copy`가 없어 pgAdmin Query Tool에서도 실행할 수 있습니다. 복습 목적상 psql로 진행하고, 시간이 남으면 pgAdmin으로 다시 실행해 보게 해도 됩니다(첫 줄 `DROP SCHEMA … CASCADE`로 처음 상태가 됩니다).
+:::
+
+## 11. 자주 하는 실수와 해결
+
+### 11-1. 증상별 해결표
+
+| 증상 (메시지) | 원인 | 해결 |
+| --- | --- | --- |
+| `password authentication failed for user "postgres"` | 비밀번호 틀림 | 설치할 때 정한 비밀번호 확인 (수업용 `12345`) |
+| `part_master.csv: No such file or directory` | psql의 현재 폴더에 CSV가 없음 | `\cd 'C:/bom_lab'` 후 다시 `\i schema_postgres.sql` |
+| `\i` 실행 시 `schema_postgres.sql: No such file or directory` | 폴더 이동을 안 했거나 경로 오타 | 경로를 `/`로, 작은따옴표로 감쌌는지 확인 |
+| `relation "part_master" does not exist` | search_path가 `bom`이 아님 / 다른 DB에 접속 | `SET search_path TO bom;` 실행, 접속 DB가 `bom_lab`인지 확인 (`\conninfo`) |
+| pgAdmin에서 `\copy` 줄 syntax error | psql 전용 명령을 pgAdmin에서 실행 | 적재는 SQL Shell (psql)에서 |
+| 프롬프트가 `bom_lab-#`에서 멈춤 | SQL 끝에 `;`이 없음 | `;` 입력 후 Enter |
+| `database "bom_lab" already exists` | 이미 만든 DB를 다시 만듦 | 그대로 `\c bom_lab` 하면 됨 |
+| hr 적재 후 `relation "part_master" does not exist` | `hr_postgres.sql`이 search_path를 `hr`로 바꿈 | `SET search_path TO bom, hr;` |
+| 적재 중간에 오류가 나서 다시 하고 싶음 | — | `\i schema_postgres.sql`을 **다시 실행**. 첫 줄 `DROP SCHEMA … CASCADE`가 기존 것을 지우고 새로 만듦 |
+
+## 12. 정리
+
+### 12-1. 오늘 만든 것 {keep}
+
+:::summary
+- PostgreSQL = **서버**(데이터 보관·실행) + **psql**(명령줄) + **pgAdmin 4**(그래픽). 기본 계정 `postgres`, 포트 `5432`.
+- 실습 DB `bom_lab` 안의 **`bom` 스키마**에 테이블 17개, 총 360행을 적재했습니다.
+- 복습으로 같은 DB의 **`hr` 스키마**에 테이블 7개, 총 215행을 적재했습니다. 두 스키마를 함께 쓰려면 `SET search_path TO bom, hr;`.
+- 적재 스크립트는 `\copy`(psql 전용)를 쓰므로 **적재는 psql**, **조회는 pgAdmin**.
+- 테이블 이름만 쓰려면 `SET search_path TO bom;`.
+- `schema_postgres.sql` = 1장 7. **물리적 모델링의 결과물**. 1장 ERD의 PK·FK가 여기서 실제 제약조건이 됩니다.
+:::
+
+### 12-2. 확인 문제
+
+:::quiz
+Q. psql에서 SQL 문과 메타 명령은 어떻게 구분하나요?
+A. 메타 명령은 `\`로 시작하고 `;`이 필요 없습니다. SQL 문은 끝에 `;`을 붙여야 실행됩니다.
+
+Q. `schema_postgres.sql`을 pgAdmin Query Tool에서 실행하면 안 되는 이유는?
+A. CSV를 넣는 `\copy`가 psql 전용 메타 명령이라 pgAdmin에서는 실행되지 않기 때문입니다.
+
+Q. 스크립트에서 코드표(`code_uit` 등)를 `part_master`보다 먼저 적재하는 이유는?
+A. `part_master`의 `uit` 등이 코드표를 참조하는 FK이므로, 부모(코드표)에 값이 먼저 있어야 참조 무결성을 지킬 수 있기 때문입니다.
+
+Q. pgAdmin에서 `SELECT * FROM part_master;`를 실행했더니 `relation "part_master" does not exist`가 나왔습니다. 확인할 두 가지는?
+A. ① 쿼리 창이 `bom_lab` DB에 접속했는지 ② `SET search_path TO bom;`을 실행했는지(또는 `bom.part_master`로 썼는지)
+:::
+
+# 데이터 탐색 — 생산 도메인: 품목 관리
+
+## 13. 생산 도메인 — 품목 관리
+
+:::teacher 강사 확인
+- 운영안 Day 1 2H(생산 도메인: 품목 관리)에 해당합니다. 아래 쿼리 결과는 제공 CSV를 PostgreSQL 16에 `schema_postgres.sql`로 적재해 실행한 값과 같습니다.
+- JOIN·GROUP BY가 들어 있지만 이 시간의 목표는 **문법이 아니라 코드 값의 뜻을 읽는 것**입니다. 쿼리는 복사해 실행하고 결과표를 함께 읽습니다.
+- 본문의 「4단원 1-2·2-3」, 「데이터 사전(3장)」, 「Day 2 5교시(5장)」는 다른 단원 원고를 가리킵니다. 최종 단원 번호에 맞춰 확인해 주세요.
+:::
+
+### 13-1. 이번 시간에 읽을 다섯 가지 {keep}
+
+SQL을 쓰기 전에 어떤 값이 무슨 뜻인지부터 읽습니다. 의미는 모두 DB 안의 코드표(`code_*`)에 들어 있습니다.
+
+```icons
+hash | P/No | 품번 11자리 = 분류코드 3 + 8 | rose | `ECP39799101`
+tag | UIT | 누가 만들고, 어떻게 관리하나 | plum | `code_uit` 11종
+history | Status | 품번의 라이프사이클 1~6 | lime | `code_status` 6종
+ruler | UOM | 수량을 세는 단위 | ivory | `code_uom` 7종
+truck | Supply Type | BOM에서 자재가 어떻게 공급되나 | hot | `code_supply_type` 3종
+```
+
+```sql pgAdmin Query Tool에서 먼저 실행합니다 (7-3)
+SET search_path TO bom;
+```
+
+### 13-2. P/No — 11자리 품번 읽기 {keep}
+
+README 1장: 품번은 **3자리 분류코드 + 8자리**이고, 끝 2자리는 **시리즈**입니다.
+
+```sql
+SELECT part_no
+     , LEFT(part_no, 3)         AS 분류코드
+     , SUBSTRING(part_no, 4, 6) AS 일련번호
+     , RIGHT(part_no, 2)        AS 시리즈
+     , description
+     , description_kr
+  FROM part_master
+ WHERE part_no IN ('TRF38316001', 'ECP39799101', 'MCK79020001', 'MHG51215701', 'MHG91254002')
+ ORDER BY part_no;
+```
+
+### 13-2. P/No — 실행 결과 {keep}
+
+```result
+| part_no | 분류코드 | 일련번호 | 시리즈 | description | description_kr |
+| --- | --- | --- | --- | --- | --- |
+| ECP39799101 | ECP | 397991 | 01 | Compressor,Reciprocating | 컴프레서 |
+| MCK79020001 | MCK | 790200 | 01 | Door,Outer | 도어 외판 |
+| MHG51215701 | MHG | 512157 | 01 | Hinge,Door | 도어 힌지(구형) |
+| MHG91254002 | MHG | 912540 | 02 | Hinge,Door | 도어 힌지 |
+| TRF38316001 | TRF | 383160 | 01 | Refrigerator,Set | 냉장고 세트 |
+```
+
+- 분류코드 3자리는 `class_lv2`, 그 첫 글자는 `class_lv1`과 **68개 품번 모두 일치**합니다(`LEFT(part_no, 3) <> class_lv2`인 행 0개).
+- 시리즈가 `02`인 품번은 `MHG91254002`(도어 힌지) 하나뿐입니다.
+
+### 13-2. Description 규칙 — Main Function + Sub {keep}
+
+README 1장: 영문 품명은 `Main Function,Sub` 형식입니다. 쉼표 앞뒤를 `SPLIT_PART`로 나눠 봅니다.
+
+```sql
+SELECT description
+     , SPLIT_PART(description, ',', 1) AS main_function
+     , SPLIT_PART(description, ',', 2) AS sub
+  FROM part_master
+ WHERE part_no IN ('ECP39799101', 'MCK79020001', 'FSC67181101',
+                   'ACB22943901', 'RSS86949501')
+ ORDER BY part_no;
+```
+
+### 13-2. Description — 실행 결과 {keep}
+
+```result
+| description | main_function | sub |
+| --- | --- | --- |
+| Cabinet Assembly | Cabinet Assembly |  |
+| Compressor,Reciprocating | Compressor | Reciprocating |
+| Screw,Customized | Screw | Customized |
+| Door,Outer | Door | Outer |
+| Sheet Steel,Stainless | Sheet Steel | Stainless |
+```
+
+`SPLIT_PART(문자열, 구분자, n)`은 구분자로 잘라 **n번째 조각**을 돌려줍니다. 쉼표가 없는 `Cabinet Assembly`는 2번째 조각이 **빈 문자열(NULL 아님)** 입니다.
+
+### 13-3. UIT — 누가 만들고, 어떻게 관리하나 {keep}
+
+```sql
+SELECT p.uit, u.classification, u.maker, u.meaning_kr, COUNT(*) AS part_cnt
+  FROM part_master p
+  JOIN code_uit u ON u.uit = p.uit
+ GROUP BY p.uit, u.classification, u.maker, u.meaning_kr
+ ORDER BY u.classification, p.uit;
+```
+
+### 13-3. UIT — 실행 결과 {keep}
+
+```result
+| uit | classification | maker | meaning_kr | part_cnt |
+| --- | --- | --- | --- | --- |
+| D | Buy item | Vendor | 수입 구매품 | 7 |
+| G | Buy item | Vendor | 국내 구매품 | 41 |
+| X | Buy item | Management | 관리용(문서·정보) | 2 |
+| F | Finished product | LG | 완제품(모델) | 2 |
+| P | Make item | LG | 사내 중간 조립품, 재고 관리 없음(팬텀) | 8 |
+| S | Make item | Vendor | 협력사 제작, 유상사급 품목 포함 | 2 |
+| T | Make item | LG | 사내 조립품, 계획·표준시간·재고 관리 | 6 |
+```
+
+> `code_uit`에는 11종이 있지만 부품 마스터에는 **7종만** 쓰입니다(C·Q·M·R은 0개).
+
+### 13-3. T와 P의 차이 — 재고를 관리하나? {keep}
+
+두 UIT 모두 LG 사내 조립품입니다. 차이는 `meaning_kr`의 「재고 관리」 여부입니다. 재고 테이블과 붙여 확인합니다.
+
+```sql
+SELECT p.part_no, p.description_kr, p.uit
+     , i.on_hand_qty, i.location
+  FROM part_master p
+  LEFT JOIN inventory i ON i.part_no = p.part_no
+ WHERE p.uit IN ('T', 'P')
+ ORDER BY p.uit DESC, p.part_no;
+```
+
+> pgAdmin에서는 NULL이 `[null]`로 보일 수 있습니다. 다음 장의 표는 NULL로 적었습니다.
+
+### 13-3. T — 실행 결과 {keep}
+
+```result T — 6개
+| part_no | description_kr | uit | on_hand_qty | location |
+| --- | --- | --- | --- | --- |
+| ACB22943901 | 캐비닛 조립체 | T | NULL | NULL |
+| ACB29328801 | 캐비닛 조립체 | T | NULL | NULL |
+| ACC12625601 | 냉동 사이클 조립체 | T | NULL | NULL |
+| ADU49470801 | 구동부 조립체 | T | NULL | NULL |
+| ATB35230801 | 터브 조립체 | T | NULL | NULL |
+| EMT68237401 | DD 모터 | T | 900.00 | WH-C1 |
+```
+
+- T 중에서는 `EMT68237401`(DD 모터)만 재고가 있습니다. README 1장: DD 모터는 사내 부품라인(C1)에서 만들어 메인라인으로 공급하는 T 품목이고, 위치도 `WH-C1`입니다.
+- 나머지 T 5개는 재고 행이 없습니다. 이것이 정상인지는 데이터만으로 판단할 수 없으므로 데이터 사전(3장)의 「확인 필요」 목록에 적습니다.
+
+### 13-3. P — 실행 결과 {keep}
+
+```result P — 8개
+| part_no | description_kr | uit | on_hand_qty | location |
+| --- | --- | --- | --- | --- |
+| ACP85953101 | 컨트롤 패널 조립체 | P | NULL | NULL |
+| ADR24872401 | 냉장실 도어 조립체 | P | NULL | NULL |
+| ADR69737101 | 도어 조립체 | P | NULL | NULL |
+| APK15762301 | 포장 조립체 | P | NULL | NULL |
+| APK23572301 | 포장 조립체 | P | NULL | NULL |
+| MCB45577701 | 외함 캐비닛 | P | NULL | NULL |
+| MCB74311201 | 외함 캐비닛 | P | NULL | NULL |
+| MLN40306101 | 내상 라이너 | P | NULL | NULL |
+```
+
+- P(팬텀) 8개는 모두 재고 행이 없습니다 — 코드표 뜻 그대로 「재고 관리 없음」.
+
+### 13-3. G와 D의 차이 — 어디서 사 오나? {keep}
+
+G·D 모두 구매품입니다. G는 국내, D는 수입입니다. 구매 속성 `line_type`과 업체의 `is_domestic`을 함께 봅니다.
+
+```sql
+SELECT p.uit, s.line_type, v.is_domestic
+     , COUNT(*) AS cnt
+  FROM part_master p
+  JOIN part_sourcing s ON s.part_no = p.part_no
+  JOIN vendor v        ON v.vendor_code = s.vendor_code
+ WHERE p.uit IN ('G', 'D')
+ GROUP BY p.uit, s.line_type, v.is_domestic
+ ORDER BY p.uit, s.line_type, v.is_domestic;
+```
+
+### 13-3. G와 D — 실행 결과 {keep}
+
+```result
+| uit | line_type | is_domestic | cnt |
+| --- | --- | --- | --- |
+| D | D | Y | 1 |
+| D | I | N | 6 |
+| G | D | N | 1 |
+| G | D | Y | 39 |
+| G | I | N | 1 |
+```
+
+- 대부분은 **G = 국내 업체 + `line_type` D**, **D = 해외 업체 + `line_type` I**로 짝이 맞습니다.
+- 짝이 안 맞는 3행(D–D–Y, G–D–N, G–I–N)이 있습니다. 어떤 품번인지는 Day 2 5교시(5장)에서 찾습니다.
+
+### 13-3. 한 문장으로 설명해 보기 {keep}
+
+:::try 한 문장으로 설명해 보기
+1. T와 P는 무엇이 같고 무엇이 다른가요?
+2. G와 D는 무엇이 같고 무엇이 다른가요?
+:::
+
+:::answer 예시 답안
+1. 둘 다 LG가 사내에서 조립하는 Make item입니다. T는 계획·표준시간·재고를 관리하고, P(팬텀)는 재고를 관리하지 않고 공정을 지나가기만 합니다.
+2. 둘 다 협력사에서 사 오는 Buy item입니다. G는 국내 구매품, D는 수입 구매품입니다.
+:::
+
+### 13-4. Status — 품번의 라이프사이클 {keep}
+
+```sql
+SELECT * FROM code_status ORDER BY status_code;
+```
+
+```result
+| status_code | status_name | active_flag | system_effect | meaning_kr |
+| --- | --- | --- | --- | --- |
+| 1 | Obsolete | Inactive | Order/Receiving/SVC disabled | 폐기 |
+| 2 | Processing | Active | Add/Change available in BOM | 등록 처리중 |
+| 3 | Approved | Active | Add/Change available in BOM | 승인(양산) |
+| 4 | Service only | Active | Order/Service available | 서비스 전용 |
+| 5 | To be obsolete | Inactive | Add/Change disabled in BOM | 폐기 예정 |
+| 6 | MFG Discontinued | Inactive | Add/Change disabled in BOM | 생산 중단 |
+```
+
+- `active_flag`가 **Inactive(1·5·6)** 이면 BOM에 추가·변경할 수 없습니다. 이런 부품이 BOM에 남아 있으면 품질 이슈입니다(Day 2 6교시).
+- 부품 마스터에는 **1(폐기) 1개, 3(승인) 67개**만 있습니다(4단원 2-3).
+
+### 13-5. UOM — 수량의 단위 {keep}
+
+:::cols
+```sql
+SELECT p.uom, u.name, u.remark_kr
+     , COUNT(*) AS part_cnt
+  FROM part_master p
+  JOIN code_uom u ON u.uom = p.uom
+ GROUP BY p.uom, u.name, u.remark_kr
+ ORDER BY part_cnt DESC, p.uom;
+```
+
+```result
+| uom | name | remark_kr | part_cnt |
+| --- | --- | --- | --- |
+| EA | EACH | 개수 단위 표준 부품 | 60 |
+| KG | KILOGRAM | 강판·수지 등 중량 단위 | 3 |
+| SH | SHEET | 판재(Sheet Steel 등) | 2 |
+| ST | SET | 제품 세트 | 2 |
+| MZ | METER | 테이프·밴드 등 부자재 | 1 |
+```
+:::
+
+BOM의 `qty_per`는 **자식 품번의 UOM 기준**입니다. 우레탄 발포액 `6.5`는 6.5개가 아니라 ==6.5kg==입니다. 단위가 다른 수량을 그냥 더하면 4단원 1-2의 통화 문제와 같은 일이 생깁니다.
+
+### 13-6. Supply Type — BOM에서 자재가 공급되는 방식 {keep}
+
+```sql
+SELECT * FROM code_supply_type;
+```
+
+```result
+| supply_type | meaning_en | meaning_kr |
+| --- | --- | --- |
+| Assembly Pull | Items with financial relationship with LG (LG orders, warehoused, or C-OSP) | LG가 발주·입고하거나 유상사급하는 품목 |
+| Supplier | Items purchased or made directly by the vendor | 협력사가 직접 제작·구매하는 품목(LG 발주 없음) |
+| Phantom | Items for separate process management, not stocked | 공정 관리용 가상 품목, 재고 없음 |
+```
+
+### 13-6. UIT와 Supply Type의 조합 {keep}
+
+:::cols
+```sql
+SELECT p.uit, b.supply_type
+     , COUNT(*) AS bom_rows
+  FROM bom_structure b
+  JOIN part_master p
+    ON p.part_no = b.child_part_no
+ GROUP BY p.uit, b.supply_type
+ ORDER BY p.uit, b.supply_type;
+```
+
+```result
+| uit | supply_type | bom_rows |
+| --- | --- | --- |
+| D | Assembly Pull | 6 |
+| D | Supplier | 2 |
+| G | Assembly Pull | 46 |
+| G | Supplier | 8 |
+| P | Assembly Pull | 1 |
+| P | Phantom | 7 |
+| S | Assembly Pull | 2 |
+| T | Assembly Pull | 6 |
+| X | Supplier | 4 |
+```
+:::
+
+실습 정답 SQL(Q7)이 쓰는 규칙은 세 가지입니다: **P → Phantom, T → Assembly Pull, X → Supplier**. 위 표에서 ==P | Assembly Pull | 1==이 규칙에 맞지 않는 1행입니다(Day 2 6교시에서 찾습니다).

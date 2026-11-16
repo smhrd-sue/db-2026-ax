@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+<rect x="0" y="0" width="1280" height="720" rx="0" fill="rgb(247, 246, 215)"/>
+<text x="64" y="54" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="17" font-weight="400" fill="rgb(111, 90, 101)" xml:space="preserve">1교시 — 왜 DB를 배우나요?</text>
+<rect x="64" y="65.75" width="6" height="44.19" fill="rgb(110, 30, 59)"/>
+<text x="86" y="99.75" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="34" font-weight="700" fill="rgb(110, 30, 59)" xml:space="preserve">파일로 관리하면 무엇이 문제일까요?</text>
+<rect x="64" y="135.94" width="1152" height="236" rx="0" fill="rgb(255, 255, 255)"/>
+<rect x="64.5" y="136.44" width="592.5" height="47" rx="0" fill="rgb(243, 241, 220)"/>
+<rect x="65" y="136.94" width="591.5" height="46" rx="0" fill="none" stroke="rgb(230, 224, 204)" stroke-width="1"/>
+<text x="77" y="167.14" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="20" font-weight="700" fill="rgb(42, 20, 32)" xml:space="preserve">파일 중심 관리</text>
+<rect x="657" y="136.44" width="558.5" height="47" rx="0" fill="rgb(243, 241, 220)"/>
+<rect x="657.5" y="136.94" width="557.5" height="46" rx="0" fill="none" stroke="rgb(230, 224, 204)" stroke-width="1"/>
+<text x="669.5" y="167.14" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="20" font-weight="700" fill="rgb(42, 20, 32)" xml:space="preserve">데이터베이스 도입 후</text>
+<rect x="65" y="183.94" width="591.5" height="46" rx="0" fill="none" stroke="rgb(230, 224, 204)" stroke-width="1"/>
+<text x="77" y="214.14" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="20" font-weight="400" fill="rgb(42, 20, 32)" xml:space="preserve">데이터를 개별 파일 단위로 따로 관리</text>
+<rect x="657.5" y="183.94" width="557.5" height="46" rx="0" fill="none" stroke="rgb(230, 224, 204)" stroke-width="1"/>
+<text x="669.5" y="214.14" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="20" font-weight="400" fill="rgb(42, 20, 32)" xml:space="preserve">하나의 통합된 데이터베이스에 저장</text>
+<rect x="65" y="230.94" width="591.5" height="46" rx="0" fill="none" stroke="rgb(230, 224, 204)" stroke-width="1"/>
+<text x="77" y="261.14" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="20" font-weight="400" fill="rgb(42, 20, 32)" xml:space="preserve">담당자가 3명이면 같은 엑셀 파일도 3개</text>
+<rect x="657.5" y="230.94" width="557.5" height="46" rx="0" fill="none" stroke="rgb(230, 224, 204)" stroke-width="1"/>
+<text x="669.5" y="261.14" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="20" font-weight="400" fill="rgb(42, 20, 32)" xml:space="preserve">3명이 같은 저장소에 동시에 접근</text>
+<rect x="65" y="277.94" width="591.5" height="46" rx="0" fill="none" stroke="rgb(230, 224, 204)" stroke-width="1"/>
+<text x="77" y="308.14" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="20" font-weight="400" fill="rgb(42, 20, 32)" xml:space="preserve">한 명이 수정하면 다른 파일도 모두 수정해야 함</text>
+<rect x="657.5" y="277.94" width="557.5" height="46" rx="0" fill="none" stroke="rgb(230, 224, 204)" stroke-width="1"/>
+<text x="669.5" y="308.14" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="20" font-weight="400" fill="rgb(42, 20, 32)" xml:space="preserve">한 사람이 수정하면 모두가 변경 내용을 확인</text>
+<rect x="65" y="324.94" width="591.5" height="46" rx="0" fill="none" stroke="rgb(230, 224, 204)" stroke-width="1"/>
+<rect x="76" y="349.14" width="289.63" height="8.88" fill="rgb(201, 216, 99)"/>
+<text x="78" y="355.14" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="20" font-weight="700" fill="rgb(42, 20, 32)" xml:space="preserve">데이터 중복 · 불일치 · 관리 비용 증가</text>
+<rect x="657.5" y="324.94" width="557.5" height="46" rx="0" fill="none" stroke="rgb(230, 224, 204)" stroke-width="1"/>
+<rect x="668.5" y="349.14" width="225.28" height="8.88" fill="rgb(201, 216, 99)"/>
+<text x="670.5" y="355.14" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="20" font-weight="700" fill="rgb(42, 20, 32)" xml:space="preserve">데이터 일관성과 효율적 관리</text>
+<text x="64" y="413.14" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="24" font-weight="400" fill="rgb(42, 20, 32)" xml:space="preserve">파일 방식의 대표 문제는 세 가지입니다.</text>
+<text x="68.79" y="463.93" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="24" fill="rgb(42, 20, 32)">1.</text>
+<rect x="94.19" y="456.28" width="160.28" height="10.73" fill="rgb(201, 216, 99)"/>
+<text x="96.19" y="463.53" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="24" font-weight="700" fill="rgb(42, 20, 32)" xml:space="preserve">실시간 공유 불가</text>
+<text x="253.47" y="463.53" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="24" font-weight="400" fill="rgb(42, 20, 32)" xml:space="preserve"> — 데이터가 동기화되지 않습니다.</text>
+<text x="68.79" y="505.32" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="24" fill="rgb(42, 20, 32)">2.</text>
+<rect x="94.19" y="497.67" width="113.27" height="10.73" fill="rgb(201, 216, 99)"/>
+<text x="96.19" y="504.92" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="24" font-weight="700" fill="rgb(42, 20, 32)" xml:space="preserve">데이터 결함</text>
+<text x="206.45" y="504.92" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="24" font-weight="400" fill="rgb(42, 20, 32)" xml:space="preserve"> — 동기화하는 과정에서 누락될 수 있습니다.</text>
+<text x="68.79" y="546.71" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="24" fill="rgb(42, 20, 32)">3.</text>
+<rect x="94.19" y="539.06" width="113.27" height="10.73" fill="rgb(201, 216, 99)"/>
+<text x="96.19" y="546.31" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="24" font-weight="700" fill="rgb(42, 20, 32)" xml:space="preserve">데이터 중복</text>
+<text x="206.45" y="546.31" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="24" font-weight="400" fill="rgb(42, 20, 32)" xml:space="preserve"> — 같은 정보가 여러 곳에 중복으로 저장됩니다.</text>
+<text x="64" y="696.3" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="14" font-weight="400" fill="rgb(111, 90, 101)" xml:space="preserve">1일 차 · DB 지도 읽기 — 데이터 모델링과 ERD</text>
+<text x="1172.58" y="696.3" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="14" font-weight="400" fill="rgb(111, 90, 101)" xml:space="preserve">15 / 93</text>
+</svg>
