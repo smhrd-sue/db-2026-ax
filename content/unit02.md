@@ -198,10 +198,11 @@ postgres=#
 
 > 비밀번호를 입력해도 글자가 나타나지 않는 것은 보안 때문입니다. 그대로 입력하고 Enter를 누르세요.
 >
-> `psql (18.x)` 아래에 `Console code page (949) differs from Windows code page …` 같은 경고가 보일 수도 있습니다. 화면 문자 코드에 대한 안내이며, 이번 적재는 스크립트가 CSV를 `UTF8`로 읽도록 지정되어 있어 그대로 진행해도 됩니다.
+> `psql (18.x)` 아래에 `Console code page (949) differs from Windows code page …` 같은 경고가 보일 수도 있습니다. 한국어 Windows의 psql은 파일과 입력을 **UHC(CP949)** 로 읽는다는 뜻입니다. 적재 스크립트는 UTF-8로 저장되어 있으므로, 6-2에서 스크립트를 실행하기 전에 ==`\encoding UTF8`== 을 먼저 입력합니다.
 
 :::teacher 강사 확인
-- 위 코드페이지 경고가 뜬 상태에서 psql 창의 한글 출력이 깨지는지는 수업 PC에서 미리 확인하세요. 깨지더라도 데이터 자체는 `ENCODING 'UTF8'`로 적재되므로, 한글이 들어간 결과는 8절의 pgAdmin에서 확인하게 하면 됩니다.
+- `\encoding UTF8` 없이 `\i schema_postgres.sql`을 실행하면 한글 주석이 든 `CREATE TABLE`(part_master, bom_structure)에서 `0xec 0x9e 바이트로 조합된 문자(인코딩: "UHC")와 대응되는 문자 코드가 "UTF8" 인코딩에는 없습니다` 오류가 나고, 그 뒤 테이블이 연쇄로 만들어지지 않습니다. 코드표 7개와 vendor만 적재되므로 학생이 "일부만 됐다"고 하면 이 경우입니다.
+- `\encoding UTF8` 후 psql 창의 한글 출력이 깨져 보이면 psql을 열기 전 cmd에서 `chcp 65001`을 실행하거나, 한글 결과는 8절의 pgAdmin에서 확인하게 하면 됩니다.
 :::
 
 ### 5-2. psql 명령은 두 종류입니다 {keep}
@@ -256,10 +257,12 @@ You are now connected to database "bom_lab" as user "postgres".
 
 ```psql
 \cd 'C:/bom_lab'
+\encoding UTF8
 \i schema_postgres.sql
 ```
 
 - Windows 경로지만 **역슬래시 `\` 대신 슬래시 `/`** 를 쓰고, 작은따옴표로 감쌉니다.
+- `\encoding UTF8`은 psql이 파일을 **UTF-8로 읽게** 합니다. 빠뜨리면 한글 주석에서 `"UHC" … "UTF8" 인코딩에는 없습니다` 오류가 납니다(11-1).
 - `\i`는 파일 안의 문장을 **위에서부터 한 줄씩 그대로 입력한 것처럼** 실행합니다.
 
 ### 6-2. 화면에 나오는 내용 읽기 {keep}
@@ -576,6 +579,7 @@ PostgreSQL 서버 (localhost:5432)
 ```psql
 \c bom_lab
 \cd 'C:/bom_lab'
+\encoding UTF8
 \i hr_postgres.sql
 ```
 
@@ -686,6 +690,7 @@ ALTER DATABASE bom_lab SET search_path TO bom, hr, public;
 | `password authentication failed for user "postgres"` | 비밀번호 틀림 | 설치할 때 정한 비밀번호 확인 (수업용 `12345`) |
 | `part_master.csv: No such file or directory` | psql의 현재 폴더에 CSV가 없음 | `\cd 'C:/bom_lab'` 후 다시 `\i schema_postgres.sql` |
 | `\i` 실행 시 `schema_postgres.sql: No such file or directory` | 폴더 이동을 안 했거나 경로 오타 | 경로를 `/`로, 작은따옴표로 감쌌는지 확인 |
+| `0xec 0x9e 바이트로 조합된 문자(인코딩: "UHC")와 대응되는 문자 코드가 "UTF8" 인코딩에는 없습니다` (영문: `character with byte sequence … in encoding "UHC" has no equivalent in encoding "UTF8"`) 뒤로 `relation "part_master" does not exist`가 줄줄이 | psql이 UTF-8 스크립트를 UHC로 읽어 한글 주석이 든 `CREATE TABLE`이 실패 | `\encoding UTF8` 입력 후 `\i schema_postgres.sql` 다시 실행 |
 | `relation "part_master" does not exist` | search_path가 `bom`이 아님 / 다른 DB에 접속 | `SET search_path TO bom;` 실행, 접속 DB가 `bom_lab`인지 확인 (`\conninfo`) |
 | pgAdmin에서 `\copy` 줄 syntax error | psql 전용 명령을 pgAdmin에서 실행 | 적재는 SQL Shell (psql)에서 |
 | 프롬프트가 `bom_lab-#`에서 멈춤 | SQL 끝에 `;`이 없음 | `;` 입력 후 Enter |
