@@ -442,6 +442,184 @@ ALTER DATABASE bom_lab SET search_path TO bom, public;
 - README 3장 안내대로, `exercises_mysql.sql`을 PostgreSQL에서 쓸 때는 `bom.` 접두사를 붙이거나 search_path를 설정해야 합니다.
 :::
 
+### 7-4. 테이블 사전 — 17개 테이블 한눈에 {keep}
+
+1장 7절 ERD가 **테이블이 어떻게 이어져 있나**를 보여 준다면, 이 사전은 **각 컬럼에 무엇이 들어 있나**를 정리한 것입니다. 쿼리를 쓰다 컬럼 뜻이 헷갈리면 여기로 돌아오세요.
+
+```rows
+- | 그룹 | 테이블 (행 수) | 한 줄 설명
+database | 마스터 | `part_master` (68) · `vendor` (12) | 품목 · 협력사
+list-tree | BOM·소싱 | `bom_structure` (82) · `part_sourcing` (52) · `site_part_attr` (16) | 제품 구성 · 구매 조건 · 사이트별 관리 속성
+calendar | 계획·재고 | `production_plan` (20) · `inventory` (53) · `scheduled_receipt` (6) | 생산계획 · 현재 재고 · 입고 예정
+history | 이력 | `uit_change_history` (5) · `part_status_history` (5) | UIT 변경 · 상태 변경
+book-open | 코드표 | `code_uit` 외 6개 | 코드 → 뜻(영/한)
+```
+
+> psql에서 `\d bom.part_master`처럼 입력하면 컬럼 이름과 타입, PK·FK를 직접 볼 수 있습니다.
+
+### 7-4. part_master — 품목 (68행)
+
+한 행 = **품번 하나**. 다른 테이블이 모두 품번(`part_no`)으로 이 테이블에 이어집니다.
+
+| 컬럼 | 키 | 뜻 | 예 |
+| --- | --- | --- | --- |
+| `part_no` | PK | 품번 11자리. 분류코드 3자리 + 8자리(끝 2자리 = 시리즈) | `ECP39799101` |
+| `description` | | 영문 품명. Main Function + Sub 규칙(13-2) | `Compressor,Reciprocating` |
+| `description_kr` | | 한글 품명 | 컴프레서 |
+| `class_lv1` | | 대분류 1글자 = 품번 첫 글자 | `E` |
+| `class_lv2` | | 분류코드 3자리 = 품번 앞 3자리 | `ECP` |
+| `tech_spec` | | 규격 | `M4x12 Zinc` |
+| `uom` | FK → `code_uom` | 수량 단위 | `EA` |
+| `uit` | FK → `code_uit` | 품목 유형 — 누가 만들고 어떻게 관리하나 | `G` |
+| `status_code` | FK → `code_status` | 라이프사이클 상태 | `3` (승인) |
+| `svc_code` | FK → `code_svc` | 서비스 부품 구분. 비어 있으면(NULL) 서비스 부품 아님 | `R` |
+| `svc_location_no` | | 서비스 부품 위치 번호 | `301A` |
+| `created_at` | | 품번 등록일 | 2025-02-06 |
+
+### 7-4. vendor — 협력사 (12행) {keep}
+
+한 행 = **업체 하나**.
+
+| 컬럼 | 키 | 뜻 | 예 |
+| --- | --- | --- | --- |
+| `vendor_code` | PK | 업체 코드 | `V1001` |
+| `vendor_name` | | 업체명 | 한빛정밀(주) |
+| `country` | | 국가 코드 2자리 | `KR`, `CN` |
+| `is_domestic` | | 국내 업체인가 (`Y`/`N`) | `Y` |
+| `main_item` | | 주로 공급하는 품목 | 판금·프레스 |
+
+> `V1012`는 **LG 사내 부품라인(C1)** 입니다. 사내 거래도 업체처럼 코드를 붙여 관리합니다.
+
+### 7-4. bom_structure — BOM (82행) {keep}
+
+한 행 = **부모 1개에 자식이 몇 개 들어가나** 한 줄. 모델(세트)에서 시작해 1~3단계 아래로 내려갑니다.
+
+| 컬럼 | 키 | 뜻 | 예 |
+| --- | --- | --- | --- |
+| `bom_id` | PK | BOM 행 번호 | `1` |
+| `model_part_no` | FK → `part_master` | 최상위 세트(모델) 품번 | `TRF38316001` |
+| `parent_part_no` | FK → `part_master` | 부모 품번 — 조립되는 쪽 | `TRF38316001` |
+| `child_part_no` | FK → `part_master` | 자식 품번 — 들어가는 쪽 | `ACB22943901` |
+| `bom_level` | | 모델에서 몇 단계 아래인가 | `1` |
+| `qty_per` | | 부모 1개당 자식 소요량 | `2` |
+| `uom` | | 소요량 단위 (FK 없음) | `EA` |
+| `supply_type` | FK → `code_supply_type` | 공급 방식 | `Assembly Pull` |
+| `c_osp_flag` | FK → `code_cosp` | 유상사급 구분 | `N` |
+| `effective_from` | | 이 BOM 줄의 적용 시작일 | 2026-01-01 |
+
+> `(model_part_no, parent_part_no, child_part_no)` 조합은 **UNIQUE**입니다. 같은 모델 안에서 같은 부모-자식 줄이 두 번 나올 수 없습니다.
+
+### 7-4. part_sourcing — 소싱 (52행) {keep}
+
+한 행 = **품번 × 업체 × 사이트**별 구매 조건. PK가 세 컬럼으로 된 복합키입니다.
+
+| 컬럼 | 키 | 뜻 | 예 |
+| --- | --- | --- | --- |
+| `part_no` | PK · FK → `part_master` | 품번 | `FSC67181101` |
+| `vendor_code` | PK · FK → `vendor` | 공급 업체 | `V1001` |
+| `site_code` | PK | 사이트 코드 | `CW` (창원) |
+| `line_type` | FK → `code_line_type` | 구매 라인 유형 — 국내·수입·사급 등 | `D` |
+| `po_price` | | 구매 단가 | `12` |
+| `currency` | | 통화 | `KRW`, `USD` |
+| `lead_time_days` | | 발주부터 입고까지 걸리는 날 수 | `7` |
+| `moq` | | 최소 주문 수량 | `10000` |
+
+### 7-4. site_part_attr — 사이트별 속성 (16행) {keep}
+
+같은 품번이라도 **사이트(공장)마다 UIT·상태가 다를 수 있어** 따로 둡니다.
+
+| 컬럼 | 키 | 뜻 | 예 |
+| --- | --- | --- | --- |
+| `site_code` | PK | 사이트 코드 | `CW`, `HN` |
+| `part_no` | PK · FK → `part_master` | 품번 | `EBA56264701` |
+| `uit` | | 이 사이트에서의 UIT (FK 없음) | `G` |
+| `status_code` | | 이 사이트에서의 상태 (FK 없음) | `3` |
+| `site_name` | | 사이트 이름 | 창원, 해외법인 |
+
+> 예: `EBA56264701`은 창원(`CW`)에서는 `G`(국내 구매품), 해외법인(`HN`)에서는 `T`(사내 조립품)입니다.
+
+### 7-4. uit_change_history — UIT 변경 이력 (5행) {keep}
+
+한 행 = 품번의 **UIT가 바뀐 기록** 한 건.
+
+| 컬럼 | 키 | 뜻 | 예 |
+| --- | --- | --- | --- |
+| `change_id` | PK | 변경 번호 | `1` |
+| `part_no` | FK → `part_master` | 품번 | `EBA56264701` |
+| `old_uit` · `new_uit` | | 바뀌기 전 · 뒤 UIT | `T` → `G` |
+| `changed_by_dept` | | 변경한 부서 | Manufacturing Engineering |
+| `change_reason` | | 변경 사유 | PCB 조립 외주화 |
+| `changed_at` | | 변경일 | 2026-03-12 |
+| `line_type_updated` | | 구매 라인 유형(`line_type`)도 함께 바꿨나 (`Y`/`N`) | `Y` |
+
+### 7-4. part_status_history — 상태 변경 이력 (5행) {keep}
+
+한 행 = 품번의 **상태가 바뀐 기록** 한 건.
+
+| 컬럼 | 키 | 뜻 | 예 |
+| --- | --- | --- | --- |
+| `part_no` | FK → `part_master` | 품번. **PK가 없어** 같은 품번이 여러 번 나옴 | `MHG51215701` |
+| `old_status` · `new_status` | | 바뀌기 전 · 뒤 상태 코드 | `3` → `5` |
+| `changed_at` | | 변경일 | 2026-04-01 |
+| `reason` | | 변경 사유 | 신규 힌지로 설계 변경(ECO-2604) |
+
+### 7-4. production_plan — 생산계획 (20행) {keep}
+
+한 행 = **어느 날 어느 라인에서 어떤 모델을 몇 대** 만들지.
+
+| 컬럼 | 키 | 뜻 | 예 |
+| --- | --- | --- | --- |
+| `plan_id` | PK | 계획 번호 | `1` |
+| `plan_date` | | 생산일 (2026-12-01 ~ 12-14) | 2026-12-01 |
+| `site_code` | | 사이트 | `CW` |
+| `line_code` | | 생산 라인 | `LINE-A` 세탁기 · `LINE-B` 냉장고 |
+| `model_part_no` | FK → `part_master` | 생산할 모델(세트) 품번 | `TRF38316001` |
+| `plan_qty` | | 계획 수량 | `380` |
+| `shift` | | 근무조 (데이터에는 `D`만 있음) | `D` |
+
+### 7-4. inventory — 재고 (53행) {keep}
+
+한 행 = **사이트 × 품번 × 보관 위치**의 재고. PK가 세 컬럼으로 된 복합키입니다.
+
+| 컬럼 | 키 | 뜻 | 예 |
+| --- | --- | --- | --- |
+| `site_code` | PK | 사이트 | `CW` |
+| `part_no` | PK · FK → `part_master` | 품번 | `FSC67181101` |
+| `location` | PK | 보관 위치(창고) | `WH-A`, `WH-C1` |
+| `on_hand_qty` | | 현재 재고 수량 | `372486` |
+| `as_of_date` | | 재고 기준일 (모두 2026-11-30) | 2026-11-30 |
+
+### 7-4. scheduled_receipt — 입고 예정 (6행) {keep}
+
+한 행 = **앞으로 들어올 입고** 한 건.
+
+| 컬럼 | 키 | 뜻 | 예 |
+| --- | --- | --- | --- |
+| `receipt_id` | PK | 입고 번호 | `1` |
+| `site_code` | | 입고될 사이트 | `CW` |
+| `part_no` | FK → `part_master` | 품번 | `ECP39799101` |
+| `vendor_code` | | 공급 업체 (`REFERENCES` 없음 — 1장 7-3) | `V1004` |
+| `eta_date` | | 도착 예정일 | 2026-12-08 |
+| `qty` | | 입고 수량 | `800` |
+| `po_no` | | 구매 오더 번호 | `PO26-1101` |
+| `receipt_type` | | `Scheduled` 확정된 입고 · `Planned` 계획 단계 입고 | `Scheduled` |
+
+### 7-4. 코드표 7개 {keep}
+
+코드표는 모두 **코드(PK) + 그 뜻**으로 되어 있습니다. `meaning_en`·`meaning_kr`은 코드의 영문·한글 뜻입니다.
+
+| 코드표 (행 수) | PK | 나머지 컬럼 | 쓰는 곳 |
+| --- | --- | --- | --- |
+| `code_uit` (11) | `uit` 품목 유형 | `classification` 완제품·Make·Buy 구분, `maker` LG·Vendor | `part_master.uit` |
+| `code_uom` (7) | `uom` 단위 | `name`, `uom_class` 수량·길이·무게·부피, `remark_kr` | `part_master.uom` |
+| `code_status` (6) | `status_code` 상태 | `status_name`, `active_flag` 활성 여부, `system_effect` 시스템에서 막히는 일 | `part_master.status_code` |
+| `code_supply_type` (3) | `supply_type` 공급 방식 | `meaning_en`, `meaning_kr` | `bom_structure.supply_type` |
+| `code_line_type` (9) | `line_type` 구매 라인 유형 | `category` Product·Part, `meaning_en` | `part_sourcing.line_type` |
+| `code_svc` (2) | `svc_code` 서비스 부품 구분 | `meaning_en`, `meaning_kr` | `part_master.svc_code` |
+| `code_cosp` (3) | `c_osp_flag` 유상사급 구분 | `meaning_en`, `meaning_kr` | `bom_structure.c_osp_flag` |
+
+> 코드 값 하나하나의 뜻(UIT `G`·`T`·`P`, 상태 `1`~`6` 등)은 13절에서 직접 조회하며 읽습니다.
+
 # 실습 데이터 조회하기
 
 ## 8. pgAdmin 4로 접속하기
