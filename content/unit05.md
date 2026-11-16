@@ -43,13 +43,13 @@ SELECT bom_id, parent_part_no, child_part_no, qty_per, supply_type
 
 ### 1-1. JOIN하면 한 표로 볼 수 있습니다 {keep}
 
-같은 5행에 `part_master`의 품명·UIT와 `code_uit`의 UIT 뜻을 이어 붙이면 다음과 같습니다. (쓰는 법은 2장에서 배웁니다.)
+같은 5행에 `part_master`의 품명·UIT와 `code_uit`의 UIT 뜻을 이어 붙이면 다음과 같습니다. (쓰는 법은 2절에서 배웁니다.)
 
 ```sql
 SELECT b.bom_id, b.child_part_no, p.description_kr, p.uit, u.meaning_kr, b.qty_per
   FROM bom_structure b
-  JOIN part_master p ON p.part_no = b.child_part_no
-  JOIN code_uit u    ON u.uit = p.uit
+ INNER JOIN part_master p ON p.part_no = b.child_part_no
+ INNER JOIN code_uit u    ON u.uit = p.uit
  WHERE b.model_part_no = 'TRF38316001' AND b.parent_part_no = 'TRF38316001'
  ORDER BY b.bom_id LIMIT 5;
 ```
@@ -69,7 +69,7 @@ SELECT b.bom_id, b.child_part_no, p.description_kr, p.uit, u.meaning_kr, b.qty_p
 ### 1-1. 나뉜 테이블을 다시 잇는 작업 {keep}
 
 > 1단원(데이터 모델링)에서 본 것처럼, 같은 정보를 여러 곳에 중복 저장하지 않으려고 테이블을 나눕니다. 그 대가로, 조회할 때는 **나뉜 테이블을 다시 이어 붙여야** 합니다. 이 작업이 **JOIN**입니다.
-한 문장으로 정리하면: ==서로 다른 테이블에 나뉘어 저장된 관련 데이터를 연결하여 한 번에 결과로 확인하는 작업==
+한 문장으로 정리하면: ==서로 다른 테이블에 나뉘어 저장된 관련 데이터를 연결하여 한 번에 결과로 확인하는 작업==.
 
 ### 1-2. 조인 키 찾기 — 같은 값을 가진 컬럼 {keep}
 
@@ -106,6 +106,8 @@ code_supply_type (공급 방식 코드표) @truck [*supply_type (공급 방식),
 | `part_sourcing.vendor_code` | `vendor.vendor_code` | 업체 이름·국가 |
 | `inventory.part_no` | `part_master.part_no` | 재고 부품의 품명 |
 | `production_plan.model_part_no` | `part_master.part_no` | 계획 모델의 품명 |
+
+> 표에는 없지만 `bom_structure.model_part_no`도 품번을 담고 있어 `part_master.part_no`와 이을 수 있습니다. 4-2에서 모델의 품명을 가져올 때 씁니다.
 
 ### 1-2. 이름이 달라도 값이 같으면 조인 키 {keep}
 
@@ -185,7 +187,7 @@ SELECT   별칭1.컬럼, 별칭2.컬럼
 3. `ON`에 **두 테이블에서 같은 값을 가진 컬럼**으로 조인 조건을 씁니다.
 4. `SELECT`에 출력할 컬럼을 **`별칭.컬럼`** 형태로 씁니다.
 
-> `INNER`는 생략할 수 있습니다. `JOIN`만 쓰면 `INNER JOIN`입니다. 이 교안에서는 2장까지 `INNER JOIN`, 3장부터 `JOIN`으로 씁니다.
+> `INNER`는 생략할 수 있습니다. `JOIN`만 쓰면 `INNER JOIN`입니다. 이 교안에서는 2절까지 `INNER JOIN`, 3절부터 `JOIN`으로 씁니다.
 
 ### 2-2. 소싱 정보에 업체 이름 붙이기 {keep}
 
@@ -233,7 +235,7 @@ SELECT s.part_no
 ```sql
 SELECT vendor_code, vendor_name
   FROM part_sourcing s
-  JOIN vendor v
+ INNER JOIN vendor v
     ON s.vendor_code = v.vendor_code
  LIMIT 1;
 ```
@@ -243,7 +245,7 @@ ERROR:  column reference "vendor_code" is ambiguous
 ```
 
 `vendor_code`는 `part_sourcing`에도 `vendor`에도 있어서 어느 쪽인지 알 수 없다는 뜻입니다. `s.vendor_code`처럼 **별칭을 붙이면** 해결됩니다.
-`vendor_name`처럼 한 테이블에만 있는 컬럼은 별칭 없이도 실행되지만, ==코드의 가독성을 위해 모든 컬럼에 별칭을 붙이는 것이 올바릅니다.==
+`vendor_name`처럼 한 테이블에만 있는 컬럼은 별칭 없이도 실행되지만, ==코드의 가독성을 위해 모든 컬럼 앞에 테이블 별칭(`s.`, `v.`)을 붙이는 것이 좋습니다.==
 
 ### 2-3. 테이블 별칭 ② 별칭을 지으면 원래 이름은 못 씁니다 {keep}
 
@@ -274,7 +276,7 @@ SELECT s.part_no, s.vendor_code, v.vendor_name, s.po_price, s.currency
  ORDER BY s.part_no;
 ```
 
-이 방식은 조인 조건과 행 조건이 `WHERE`에 섞여서, 조인 조건 하나를 빠뜨려도 알아채기 어렵습니다(1-3 자주 하는 실수). 이 수업에서는 **`JOIN … ON`** 으로 작성합니다.
+이 방식은 조인 조건과 행 조건이 `WHERE`에 섞여서, 조인 조건 하나를 빠뜨려도 알아채기 어렵습니다(1-3). 이 수업에서는 **`JOIN … ON`** 으로 작성합니다.
 
 ### 2-5. 세 개 테이블 잇기 — 냉장고 1레벨 구성품 (Q1) {keep}
 
@@ -373,7 +375,7 @@ SELECT b.bom_id
 | 12 | SAA76541601 | 메인 펌웨어 | X | 관리용(문서·정보) | 1.000 | Supplier |
 ```
 
-- 조인을 하나 더 해도 **행 수는 12행 그대로**입니다. 부품 하나에 UIT는 하나뿐이므로(`code_uit`의 PK) 짝이 1:1로 붙기 때문입니다.
+- 조인을 하나 더 해도 **행 수는 12행 그대로**입니다. 부품 하나에 UIT는 하나뿐이므로(`code_uit`의 PK) 행마다 짝이 정확히 하나씩(N:1) 붙기 때문입니다.
 - 이제 「냉장고 1대에 나사 M4x12를 24개 쓰고, 이 나사는 국내에서 사 오는 부품」이라고 한 줄로 읽을 수 있습니다.
 
 :::teacher 강사 확인
@@ -449,6 +451,8 @@ SELECT d.department_id
 | 60 | IT | 1400 | Southlake | US | United States of America |
 ```
 :::
+
+> 확인 문제를 마치면 `SET search_path TO bom;`으로 돌아옵니다.
 
 # OUTER JOIN · 안티 조인
 
@@ -526,7 +530,7 @@ SELECT COUNT(*)
 
 LEFT JOIN 결과에서 **오른쪽 컬럼이 NULL인 행**만 남기면 「짝이 없는 행」이 됩니다. 이 패턴을 **안티 조인**이라고 부릅니다.
 
-**① 소싱 정보가 없는 부품 (운영안 2H)**
+**① 소싱 정보가 없는 부품**
 
 ```sql
 SELECT p.part_no
@@ -571,11 +575,11 @@ SELECT p.part_no
 ### 3-3. IS NULL은 어느 컬럼으로? {keep}
 
 :::error IS NULL은 오른쪽 테이블의 「NULL이 될 수 없는 컬럼」으로
-`WHERE s.part_no IS NULL`의 `s.part_no`는 `part_sourcing`의 PK 컬럼이라 원래 NULL이 없습니다. 그래서 NULL이면 「짝이 없어서 채운 NULL」이라고 확신할 수 있습니다.
+`WHERE s.part_no IS NULL`의 `s.part_no`는 조인 조건(`ON`)에 쓴 조인 키 컬럼이라, 짝이 지어진 행에서는 NULL일 수 없습니다. 그래서 NULL이면 「짝이 없어서 채운 NULL」이라고 확신할 수 있습니다.
 `WHERE s.po_price IS NULL`로 쓰면 **짝은 있지만 단가가 비어 있는 행**(`MFT43979901`, 4단원 1-4)까지 섞여 나옵니다. ==「짝이 없다」와 「값이 비었다」를 구분==하세요.
 :::
 
-### 3-3. ② 재고가 없는 부품 — 구매품만 점검 (운영안 2H) {keep}
+### 3-3. ② 재고가 없는 부품 — 구매품만 점검 {keep}
 
 :::cols
 ```sql
@@ -596,11 +600,11 @@ SELECT p.part_no
 ```
 :::
 
-- **0행**입니다. 구매품(G·D)과 협력사 제작품(S)은 모두 재고 행이 있습니다. `AND p.uit IN (…)` 조건을 빼면 15행(F 2, P 8, T 5)이 나옵니다(6장 복습 문제 5번).
+- **0행**입니다. 구매품(G·D)과 협력사 제작품(S)은 모두 재고 행이 있습니다. `AND p.uit IN (…)` 조건을 빼면 15행(F 2, P 8, T 5)이 나옵니다(6절 복습 문제 5번).
 
 > 결과가 0행이라는 것도 **진단 결과**입니다. 「점검했고, 문제없음」을 쿼리로 증명한 것입니다.
 
-### 3-3. ③ 생산계획에 없는 모델 (운영안 2H) {keep}
+### 3-3. ③ 생산계획에 없는 모델 {keep}
 
 :::cols
 ```sql
@@ -753,7 +757,7 @@ SELECT v.vendor_code
 | | 조건을 `ON`에 | 조건을 `WHERE`에 |
 | --- | --- | --- |
 | 실행 시점 | 짝을 **지을 때** 적용 | 짝을 다 지은 **뒤에** 적용 |
-| 짝이 없는 업체 | NULL로 채워 **남음** → 0 | `s.currency`가 NULL이라 조건에서 **탈락** |
+| 달러 소싱이 없는 업체 | 조건에 맞는 짝이 없어 NULL로 채워 **남음** → 0 | 짝지어진 KRW 행이 모두 걸러져 업체가 **사라짐** (소싱이 아예 없는 업체였다면 `s.currency`가 NULL이라 역시 탈락) |
 | 결과 | 12행 | 4행 (INNER JOIN과 같아짐) |
 
 > ==LEFT JOIN에서 오른쪽 테이블 조건을 WHERE에 쓰면, LEFT JOIN이 INNER JOIN처럼 동작합니다.== 「짝이 없는 행도 남기고 싶다」면 오른쪽 테이블의 조건은 `ON`에 씁니다. 왼쪽 테이블의 조건(예: `v.is_domestic = 'N'`)은 `WHERE`에 써도 됩니다.
@@ -779,7 +783,7 @@ SELECT COUNT(*)
 
 ### 3-7. FULL JOIN {keep}
 
-**FULL JOIN**은 양쪽 모두 짝이 없는 행을 남깁니다. 「소싱 정보는 있는데 재고 행이 없는 부품」과 「재고 행은 있는데 소싱 정보가 없는 부품」을 한 번에 봅니다.
+**FULL JOIN**은 짝이 있는 행에 더해, 왼쪽·오른쪽 어느 쪽이든 짝이 없는 행까지 모두 남깁니다. 「소싱 정보는 있는데 재고 행이 없는 부품」과 「재고 행은 있는데 소싱 정보가 없는 부품」을 한 번에 봅니다.
 
 :::cols
 ```shot FULL JOIN — 양쪽 모두
@@ -815,6 +819,7 @@ SELECT s.part_no AS src_part
 (힌트: `departments.manager_id`와 `employees.employee_id`가 연결됩니다.)
 
 **[응용]** 직원이 **한 명도 없는** 부서의 부서 ID와 부서명을 부서 ID 순으로 출력하세요. LEFT JOIN + IS NULL과 NOT EXISTS 두 가지 방법으로 작성하고 결과 행 수가 같은지 확인합니다.
+(힌트: NOT EXISTS는 3-4 쿼리에서 테이블과 컬럼만 바꿔 쓰면 됩니다.)
 :::
 
 ### 3-8. 확인 문제 답 — 복습 {keep}
@@ -911,6 +916,8 @@ SELECT d.department_id
 ```
 :::
 
+> 확인 문제를 마치면 `SET search_path TO bom;`으로 돌아옵니다.
+
 # 다중 조인 + 집계 · 셀프 조인
 
 :::goal
@@ -996,7 +1003,7 @@ SELECT b.model_part_no
 :::
 
 - `classification`(Make item / Buy item)은 `code_uit`에만 있는 컬럼입니다. 4단원 2-8에서는 `CASE`로 Make/Buy 라벨을 직접 만들었지만, **코드표를 조인하면 정의된 분류를 그대로** 쓸 수 있습니다.
-- 냉장고는 구매품(Buy)이 29종, 세탁기는 32종입니다.
+- 냉장고는 Buy item으로 분류된 구성품이 29종(D 3 + G 24 + X 2), 세탁기는 32종입니다. 관리용(X)도 코드표에서는 Buy item입니다.
 
 ### 4-2. 왜 COUNT(DISTINCT p.part_no)일까? {keep}
 
@@ -1029,7 +1036,7 @@ SELECT m.description_kr AS model
 ```
 :::
 
-> 이 쿼리에서 `part_master`를 **두 번**(`p`, `m`) 조인했습니다. 한 번은 자식 부품의 UIT를, 한 번은 모델의 한글 이름을 가져오기 위해서입니다. 같은 테이블을 여러 번 쓰려면 **별칭을 다르게** 붙이면 됩니다(5장).
+> 이 쿼리에서 `part_master`를 **두 번**(`p`, `m`) 조인했습니다. 한 번은 자식 부품의 UIT를, 한 번은 모델의 한글 이름을 가져오기 위해서입니다. 같은 테이블을 여러 번 쓰려면 **별칭을 다르게** 붙이면 됩니다(5절).
 
 ### 4-2. 같은 부품이 여러 번 쓰이는 BOM 행 {keep}
 
@@ -1090,7 +1097,7 @@ SELECT COUNT(*)
 > 실행 전: `SET search_path TO hr;`
 
 :::try
-**[복습]** 부서 **이름**별 직원 수(`emp_cnt`)와 평균 급여(`avg_sal`, 소수 첫째 자리 반올림)를 구하되, 직원이 5명 이상인 부서만 직원 수가 많은 순으로 출력하세요.
+**[복습]** 부서 **이름**별 직원 수(`emp_cnt`)와 평균 급여(`avg_sal`, 소수 첫째 자리까지 반올림)를 구하되, 직원이 5명 이상인 부서만 직원 수가 많은 순, 같으면 부서 이름 순으로 출력하세요.
 
 **[응용]** `employees` → `departments` → `locations` → `countries` 네 테이블을 조인해 **국가명별 직원 수**(`emp_cnt`)를 많은 순으로 출력하세요.
 결과의 직원 수를 모두 더하면 107명이 되나요? 아니라면 왜일까요?
@@ -1110,7 +1117,7 @@ SELECT d.department_name
     ON e.department_id = d.department_id
  GROUP BY d.department_name
 HAVING COUNT(*) >= 5
- ORDER BY emp_cnt DESC;
+ ORDER BY emp_cnt DESC, d.department_name;
 ```
 
 ```result
@@ -1118,8 +1125,8 @@ HAVING COUNT(*) >= 5
 | --- | --- | --- |
 | Shipping | 45 | 3475.6 |
 | Sales | 34 | 8955.9 |
-| Purchasing | 6 | 4150.0 |
 | Finance | 6 | 8601.3 |
+| Purchasing | 6 | 4150.0 |
 | IT | 5 | 5760.0 |
 ```
 :::
@@ -1155,11 +1162,13 @@ SELECT c.country_name
 합계는 68 + 35 + 2 + 1 = **106명**입니다. 부서가 NULL인 직원 1명(178 Kimberely Grant)이 첫 번째 INNER JOIN에서 짝이 없어 빠졌기 때문입니다. (4단원 1-6 확인 문제의 `COUNT(department_id)` = 106과 같은 원인)
 :::
 
+> 확인 문제를 마치면 `SET search_path TO bom;`으로 돌아옵니다.
+
 ## 5. 셀프 조인 — 같은 테이블을 두 번
 
 ### 5-1. 같은 테이블을 두 번 쓰기 — 부모와 자식의 이름 {keep}
 
-`bom_structure`의 한 행에는 **부모 품번**과 **자식 품번**이 둘 다 있고, 둘 다 `part_master.part_no`를 가리킵니다. 그래서 `part_master`를 **역할이 다른 두 개의 테이블처럼** 조인합니다.
+`bom_structure`의 한 행에는 **부모 품번**과 **자식 품번**이 둘 다 있고, 둘 다 `part_master.part_no`를 가리킵니다. 그래서 `part_master`를 **역할이 다른 두 개의 테이블처럼** 조인합니다. 테이블을 자기 자신과 잇는 셀프 조인은 5-2부터이고, 여기서는 그 준비로 같은 테이블을 역할별 별칭으로 두 번 조인합니다.
 
 ```sql
 SELECT b.bom_id
@@ -1190,7 +1199,7 @@ SELECT b.bom_id
 | 17 | ACB22943901 | 캐비닛 조립체 | MHG91254002 | 도어 힌지 | 2.000 |
 ```
 
-> ==같은 테이블에서 조인하는 것이기 때문에 반드시 테이블에 별칭을 사용해야 합니다.== 별칭이 없으면 `part_master.description_kr`이 부모 것인지 자식 것인지 구분할 수 없습니다.
+> ==같은 테이블을 두 번 쓰는 것이기 때문에 반드시 테이블에 별칭을 사용해야 합니다.== 별칭이 없으면 `part_master.description_kr`이 부모 것인지 자식 것인지 구분할 수 없습니다.
 
 :::teacher 강사 확인
 - `bom_id` 16의 `MHG51215701`(도어 힌지(구형))은 4단원 2-3에서 본 **폐기(1) 상태** 부품입니다. README 4장 **A2**(폐기 부품 BOM 잔존)이며, 이 단원 다음의 품질 진단 시간(Q6)에서 `code_status`를 조인해 찾습니다. 훈련생이 먼저 알아채면 칭찬하고, 「상태 코드를 같이 조인하면 확인할 수 있다」까지만 안내하세요.
@@ -1208,7 +1217,7 @@ b2 :                          ACB22943901(캐비닛 조립체)  →  MCB45577701
 
 ### 5-2. 아래에 구성품을 가진 1레벨 구성품 {keep}
 
-**질문:** 냉장고 1레벨 구성품 중 **자기 아래에 구성품을 가진** 것(중간 조립품)과 그 구성품 수는?
+**질문:** 냉장고 1레벨 구성품 중 **자기 아래에 구성품을 가진** 것과 그 구성품 수는?
 
 :::cols
 ```sql
@@ -1241,7 +1250,7 @@ SELECT b1.child_part_no
 
 ### 5-2. 결과 읽기 {keep}
 
-- 1레벨 12개 중 5개가 아래에 구성품을 가진 조립품입니다. 나머지 7개(선반, 나사 등)는 INNER JOIN에서 짝이 없어 빠졌습니다.
+- 1레벨 12개 중 5개가 아래에 구성품을 가집니다. 나머지 7개(선반, 나사 등)는 INNER JOIN에서 짝이 없어 빠졌습니다.
 - `b2.model_part_no = b1.model_part_no`는 같은 모델의 BOM끼리만 잇기 위한 조건입니다. (이 데이터에서는 이 조건을 빼도 결과가 같지만, 같은 조립품 품번이 다른 모델 BOM에도 있을 수 있으므로 습관적으로 함께 씁니다.)
 
 > 셀프 조인 한 번으로 **한 단계**를 내려갔습니다. 3레벨까지 내려가려면 셀프 조인을 한 번 더 해야 하고, 레벨 수를 모르면 몇 번 해야 할지 정할 수 없습니다. 이 문제를 푸는 방법이 Day 3의 **재귀 CTE**입니다.
@@ -1277,7 +1286,7 @@ SELECT a.employee_id
 - `a`는 **직원** 역할, `b`는 **상사** 역할입니다.
 - 부서 90에는 직원이 3명(100·101·102)인데 2명만 나왔습니다. 100번 Steven King은 상사가 없어(`manager_id` NULL) 짝이 없기 때문입니다. → 확인 문제 [복습]
 
-> 실습을 마치면 `SET search_path TO bom;`으로 BOM 스키마로 돌아옵니다.
+> 바로 이어지는 5-4 확인 문제도 HR 데이터로 풉니다. `hr` 스키마 그대로 진행합니다.
 
 ### 5-4. 확인 문제 — HR 데이터 {keep}
 
@@ -1342,11 +1351,13 @@ SELECT a.employee_id
 ```
 :::
 
+> 확인 문제를 마치면 `SET search_path TO bom;`으로 돌아옵니다.
+
 ## 6. 복습 문제
 
 ### 6-0. 복습 문제 안내 {keep}
 
-> 범위: INNER JOIN · OUTER JOIN · 안티 조인 · 다중 조인 + 집계. `bom` 스키마의 테이블로 풀어 주세요. (`SET search_path TO bom;` 출력 순서는 `ORDER BY` 기준)
+> 범위: INNER JOIN · OUTER JOIN · 안티 조인 · 다중 조인 + 집계. `bom` 스키마의 테이블로 풀어 주세요. 실행 전: `SET search_path TO bom;` 출력 순서는 `ORDER BY` 기준입니다.
 
 ```icons 여섯 문항
 globe | 1 · INNER JOIN | 해외 업체에서 사 오는 부품 | rose
@@ -1376,7 +1387,7 @@ layers | 6 · (심화) 다중 조인 | 1레벨 수입 구매품의 업체 | hot
 
 ### 6-2. 복습 2 {keep}
 
-**2.** (운영안 Q1 도전 과제) 세탁기 세트(`TWM61868701`)의 1레벨 구성품을 BOM 순서(`bom_id`)대로 출력하되, 공급 방식(`supply_type`)의 한글 의미를 함께 보여 주세요. [힌트: `code_supply_type`]
+**2.** 세탁기 세트(`TWM61868701`)의 1레벨 구성품을 BOM 순서(`bom_id`)대로 출력하되, 공급 방식(`supply_type`)의 한글 의미를 함께 보여 주세요. [힌트: `code_supply_type`]
 
 ```result 출력 결과 (총 15행) — 앞 5행과 마지막 2행
 | bom_id | child_part_no | description_kr | supply_type | meaning_kr |
@@ -1490,7 +1501,7 @@ SELECT c.status_code, c.status_name, COUNT(p.part_no) AS part_cnt
 ```
 
 - 4번에서 `COUNT(*)`를 쓰면 부품이 없는 상태 2·4·5·6이 0이 아니라 1로 나옵니다(3-5).
-- 4번 결과의 `Obsolete` 1개는 4단원 2-3의 `MHG51215701`입니다. 5-1에서 이 부품이 냉장고 캐비닛 조립체 BOM에 들어 있는 것을 보았습니다.
+- 4번 결과의 `Obsolete` 1개는 4단원 2-3의 `MHG51215701`입니다. 이 부품이 어디에 쓰이는지는 품질 진단 시간에 확인합니다.
 :::
 
 ### 6-7. 복습 5 · 6 답 {keep}
@@ -1543,11 +1554,11 @@ SELECT m.description_kr AS model, b.child_part_no, p.description_kr, v.vendor_na
 - **CROSS JOIN**: 조인 조건이 없으면 행 수 × 행 수. 조인 조건을 빠뜨린 쉼표 조인도 같은 결과(오류 없음).
 - **INNER JOIN**: 양쪽에 짝이 있는 행만. `ON`에는 조인 조건, `WHERE`에는 행 조건.
 - **테이블 별칭**: 같은 이름의 컬럼은 `별칭.컬럼`으로 구분. 별칭을 지으면 원래 이름은 못 씀.
-- **LEFT JOIN**: 왼쪽 테이블의 행은 모두 남기고, 짝이 없으면 오른쪽을 NULL로 채움. **안티 조인** = LEFT JOIN + `오른쪽 PK IS NULL` (= `NOT EXISTS`).
+- **LEFT JOIN**: 왼쪽 테이블의 행은 모두 남기고, 짝이 없으면 오른쪽을 NULL로 채움. **안티 조인** = LEFT JOIN + `오른쪽 테이블의 NULL이 될 수 없는 컬럼(PK·조인 키) IS NULL` (= `NOT EXISTS`).
 - **ON vs WHERE**: LEFT JOIN에서 오른쪽 테이블 조건을 `WHERE`에 쓰면 INNER JOIN처럼 됨.
 - **COUNT**: LEFT JOIN 결과는 `COUNT(오른쪽 PK)`로 셈. `COUNT(*)`는 NULL로 채운 행까지 셈.
 - **1:N 조인**: 행이 늘어남. 집계 전에 `COUNT(*)`로 몇 배가 되었는지 확인.
-- **셀프 조인**: 같은 테이블을 역할이 다른 별칭으로 두 번 사용(부모–자식, 직원–상사).
+- **셀프 조인**: 한 테이블을 자기 자신과 조인(BOM 부모–자식 행, 직원–상사). 같은 테이블을 두 번 붙일 때도 역할별 별칭 필수.
 :::
 
 ### 7-2. 확인 문제
@@ -1556,14 +1567,14 @@ SELECT m.description_kr AS model, b.child_part_no, p.description_kr, v.vendor_na
 Q. 냉장고 1레벨 구성품(12행)과 `part_master`(68행)를 조인 조건 없이 이었더니 816행이 나왔습니다. 원인과 해결 방법은?
 A. 조인 조건이 없어 모든 행끼리 짝지어진 CROSS JOIN 결과(12 × 68)입니다. `ON p.part_no = b.child_part_no` 조인 조건을 씁니다.
 
-Q. `SELECT vendor_code, vendor_name FROM part_sourcing s JOIN vendor v ON …`이 `ambiguous` 오류가 나는 이유는?
+Q. `SELECT vendor_code, vendor_name FROM part_sourcing s INNER JOIN vendor v ON …`이 `ambiguous` 오류가 나는 이유는?
 A. `vendor_code`가 두 테이블에 모두 있어 어느 것인지 알 수 없기 때문입니다. `s.vendor_code`처럼 별칭을 붙입니다.
 
 Q. 「소싱 정보가 없는 부품」을 찾을 때 INNER JOIN을 쓰면 안 되는 이유와, 대신 쓰는 패턴은?
 A. INNER JOIN은 짝이 없는 행을 결과에서 버립니다. `part_master LEFT JOIN part_sourcing` 후 `WHERE s.part_no IS NULL`로 짝이 없는 행만 남깁니다.
 
 Q. 업체별 달러 소싱 건수를 0건 업체까지 보려고 LEFT JOIN을 썼는데, `WHERE s.currency = 'USD'`를 붙이니 4개 업체만 나왔습니다. 왜일까요?
-A. `WHERE`는 짝을 다 지은 뒤 적용되어, 짝이 없어 `s.currency`가 NULL인 업체가 모두 탈락합니다. 조건을 `ON … AND s.currency = 'USD'`로 옮깁니다.
+A. `WHERE`는 짝을 다 지은 뒤 적용되어, 달러가 아닌 행(그리고 짝이 없어 NULL인 행)이 모두 걸러지고 달러 소싱이 없는 업체는 남는 행이 없습니다. 조건을 `ON … AND s.currency = 'USD'`로 옮깁니다.
 
 Q. `code_uit LEFT JOIN part_master` 후 `COUNT(*)`를 했더니, 부품이 없는 UIT C가 1로 나왔습니다. 0으로 나오게 하려면?
 A. LEFT JOIN이 짝 없는 C에도 NULL로 채운 1행을 만들었기 때문입니다. `COUNT(p.part_no)`처럼 오른쪽 테이블의 PK를 셉니다.

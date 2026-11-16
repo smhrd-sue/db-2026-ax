@@ -56,7 +56,7 @@ users | ROLE | 권한 **묶음** — 여러 권한을 한 이름으로 묶어 �
 
 ### 1-2. 왜 필요할까요? {keep}
 
-Day 4에서 만드는 구조는 「**에이전트가 조회·판단 → 사람이 승인 → 기록**」입니다(운영안 Day 4 목표). 이때 에이전트가 `postgres`(관리자) 계정으로 접속한다면 어떻게 될까요?
+Day 4에서 만드는 구조는 「**에이전트가 조회·판단 → 사람이 승인 → 기록**」입니다. 이때 에이전트가 `postgres`(관리자) 계정으로 접속한다면 어떻게 될까요?
 
 - 판단만 해야 하는 에이전트가 `part_master`의 UIT를 **직접 바꿀 수 있습니다.**
 - 실수 한 번으로 `uit_change_history`(변경 이력)를 **지우거나 덮어쓸 수 있습니다.**
@@ -202,7 +202,7 @@ SELECT datname, datacl
 
 ### 2-3. PUBLIC의 접속 권한 회수 {keep}
 
-PUBLIC의 기본 접속 권한을 회수해, 허락받은 계정만 접속하게 바꿉니다.
+PUBLIC의 기본 접속 권한을 회수해, 허락받은 계정만 접속하게 바꿉니다. `REVOKE`는 권한을 회수하는 명령입니다(4장에서 자세히 봅니다).
 
 ```sql postgres 창
 REVOKE CONNECT ON DATABASE bom_lab FROM PUBLIC;
@@ -467,6 +467,8 @@ LINE 1: CREATE TABLE my_note (memo TEXT);
 | `REFERENCES` | `x` | 이 테이블을 참조하는 FK 만들기 |
 | `TRIGGER` | `t` | 트리거 만들기 |
 | `ALL` (또는 `ALL PRIVILEGES`) | — | 위 권한 전부 |
+
+> PostgreSQL 17부터는 `MAINTAIN`(약어 `m`) 권한이 추가되어, `\dp`의 권한 목록에 `m`이 더 보일 수 있습니다.
 
 ### 3-3. 데이터베이스·스키마에 주는 권한 {keep}
 
@@ -895,7 +897,7 @@ SELECT rolname, rolcanlogin
 | dcl_test | t |
 ```
 
-누가 어느 롤의 구성원인지는 `pg_auth_members`에서 봅니다.
+누가 어느 롤의 구성원인지(롤 멤버십)는 `pg_auth_members`에서 봅니다.
 
 ```sql postgres 창
 SELECT r.rolname AS role_name
@@ -926,6 +928,8 @@ SELECT r.rolname AS role_name
  dcl_test   |
  postgres   | Superuser, Create role, Create DB, Replication, Bypass RLS
 ```
+
+> 확인 문제를 풀었다면 `hr_viewer`도 목록에 보입니다.
 
 4장에서 테이블 권한을 모두 회수했지만, 롤을 통해 다시 조회됩니다.
 
@@ -1176,7 +1180,7 @@ ERROR:  permission denied for table departments
 
 ### 6-1. 누가 무엇을 해야 하나 {keep}
 
-Day 4의 「**조회 → 판단 → 승인 → 기록**」 흐름을 계정으로 나눠 봅니다. A1 이상 데이터인 스테이터(`EMT73633001`, 해외 벤더인데 UIT G)를 Q13처럼 정정하는 상황입니다.
+Day 4의 「**조회 → 판단 → 승인 → 기록**」 흐름을 계정으로 나눠 봅니다. 이상 데이터(해외 업체인데 UIT가 G)인 스테이터(`EMT73633001`)를 Q13처럼 정정하는 상황입니다.
 
 | 계정 | 맡은 일 | 줄 권한 | 주지 않을 권한 |
 | --- | --- | --- | --- |
@@ -1234,6 +1238,8 @@ SELECT p.part_no, p.description_kr, p.uit
 ```
 
 해외 업체(`is_domestic = 'N'`)인데 UIT가 G(국내 구매품)입니다. 에이전트는 여기까지 **판단**할 수 있습니다.
+
+> Q13을 이미 `COMMIT`한 PC에서는 UIT가 이미 D로 나오고, 6-4의 이력도 한 행 더 나옵니다.
 
 ### 6-3. agent_bot — 바꾸지는 못합니다 {keep}
 
@@ -1306,6 +1312,8 @@ SELECT change_id, part_no, old_uit, new_uit, changed_by_dept
 | 5 | APK23572301 | T | P | R&D |
 | 6 | EMT73633001 | G | D | Procurement |
 ```
+
+> Q13을 이미 `COMMIT`한 PC에서는 이력이 한 행 더 나옵니다(아래 6-4의 건수도 하나 더 많습니다).
 
 ```sql mat_staff 창
 ROLLBACK;
@@ -1435,6 +1443,9 @@ SELECT rolname
 | postgres |
 ```
 
+- 확인 문제를 풀었다면 `hr_viewer`, `hr_read`도 보입니다. 같은 순서(`DROP OWNED BY` → `DROP ROLE`)로 지울 수 있습니다.
+- 2-3에서 회수한 PUBLIC 접속 권한은 `GRANT CONNECT ON DATABASE bom_lab TO PUBLIC;`로 되돌릴 수 있습니다. 회수한 상태로 두면 이후 새 계정마다 `GRANT CONNECT`가 필요합니다.
+
 ### 7-2. DROP OWNED BY는 그 롤이 「주인인 객체」도 지웁니다 {keep}
 
 :::error DROP OWNED BY는 그 롤이 「주인인 객체」도 지웁니다
@@ -1459,7 +1470,7 @@ DROP ROLE 지울롤;                        -- ③ 롤 삭제
 
 ### 8-0. 복습 문제 안내 {keep}
 
-> 범위: DCL 전체(사용자 · CONNECT · USAGE · 객체 권한 · 컬럼 권한 · ROLE · REVOKE · DROP ROLE). 관리자 명령은 `postgres` 창, 확인은 `plan_viewer` 창에서 실행합니다. 2-3에서 `bom_lab`의 PUBLIC 접속 권한을 회수한 상태라고 가정합니다.
+> 범위: DCL 전체(사용자 · CONNECT · USAGE · 객체 권한 · 컬럼 권한 · ROLE · REVOKE · DROP ROLE). 관리자 명령은 `postgres` 창, 확인은 문제에 적힌 창(`plan_viewer` 또는 `postgres`)에서 실행합니다. 2-3에서 `bom_lab`의 PUBLIC 접속 권한을 회수한 상태라고 가정합니다.
 
 ```icons 여섯 문항
 user-plus | 1 · 계정 · 권한 3개 | 생산계획 조회 계정 plan_viewer | rose
@@ -1583,9 +1594,10 @@ SELECT vendor_code, vendor_name, country
  ORDER BY vendor_code;
 
 -- (나)
-SELECT vendor_code, vendor_name
+SELECT vendor_code, vendor_name, country
   FROM bom.vendor
- WHERE is_domestic = 'N';
+ WHERE is_domestic = 'N'
+ ORDER BY vendor_code;
 ```
 
 ```sql 4 — postgres 창
@@ -1634,7 +1646,7 @@ DROP ROLE mat_role;
 - **DCL** = `GRANT`(부여) · `REVOKE`(회수) · ROLE(권한 묶음). 「누가 무엇을 할 수 있는가」를 정합니다.
 - **슈퍼유저(`postgres`)** 는 권한 검사를 건너뜁니다. 권한 확인은 반드시 새 계정으로 접속해서 합니다.
 - **사용자** = LOGIN 속성이 있는 롤. `CREATE USER`(LOGIN 기본) / `CREATE ROLE`(NOLOGIN 기본).
-- **접속 3단계**: ① LOGIN 속성 → ② DB의 `CONNECT` → ③ 스키마의 `USAGE` → 그다음에야 테이블 권한(`SELECT`·`INSERT`·`UPDATE`·`DELETE` …).
+- **권한 검사 순서**: ① LOGIN 속성 → ② DB의 `CONNECT` → ③ 스키마의 `USAGE` → ④ 테이블 권한(`SELECT`·`INSERT`·`UPDATE`·`DELETE` …).
 - **오류로 위치 찾기**: `not permitted to log in`(LOGIN) / `permission denied for database`(CONNECT) / `permission denied for schema`(USAGE) / `permission denied for table`(객체 권한). 새 계정에서 `does not exist`면 스키마 권한부터 의심합니다.
 - **컬럼 권한**: `GRANT UPDATE (uit) ON …`. 보지 못하게 한 컬럼은 `WHERE`에도 쓸 수 없습니다.
 - **ROLE**: 권한을 롤에 묶어 `GRANT 롤 TO 사용자;`로 부여. 직접 회수해도 롤로 받은 권한은 남습니다.

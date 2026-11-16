@@ -18,11 +18,11 @@ title: 그룹화·조건·집계
 
 | 구분 | 입력 행 | 결과 | 예 |
 | --- | --- | --- | --- |
-| 단일행 함수 | **1개** 행 | 행마다 결과 1개 | `ROUND(po_price, 0)`, `TO_CHAR(created_at, 'YYYY-MM')` |
+| 단일행 함수 | **1개** 행 | 행마다 결과 1개 | `ROUND(po_price, 0)` (반올림 — 1-2에서 씁니다) |
 | **집계 함수** (다중행 함수) | **여러 개** 행 | 그룹마다 결과 **1개** | `COUNT`, `SUM`, `AVG`, `MAX`, `MIN` |
 
 > 3단원에서 `WHERE`로 **행을 골랐다면**, 이번 단원은 고른 행을 **묶어서 세고, 더하고, 평균 내는** 방법입니다.
-“UIT별로 부품이 몇 개인가?”, “업체별로 몇 품목을 사 오는가?” "부서별 직원 수는 몇명인가?" 같은 질문이 모두 집계입니다.
+“UIT별로 부품이 몇 개인가?”, “업체별로 몇 품목을 사 오는가?”, “부서별 직원 수는 몇 명인가?” 같은 질문이 모두 집계입니다.
 
 ### 1-1. 집계 함수 다섯 가지 {keep}
 
@@ -36,7 +36,7 @@ minus | MIN() | 최솟값 | hot
 
 ### 1-2. 테이블 전체를 하나의 그룹으로 {keep}
 
-`GROUP BY`를 쓰지 않으면 **테이블 전체(또는 WHERE로 남은 행 전체)가 하나의 그룹**이 됩니다. <br>그래서 결과는 항상 **1행**입니다.
+집계 함수를 쓰면서 `GROUP BY`를 쓰지 않으면 **테이블 전체(또는 WHERE로 남은 행 전체)가 하나의 그룹**이 됩니다. <br>그래서 결과는 항상 **1행**입니다.
 
 ```sql
 SELECT COUNT(*)      AS 행수
@@ -53,6 +53,8 @@ SELECT COUNT(*)      AS 행수
 | --- | --- | --- | --- | --- |
 | 45 | 389215.00 | 61000.00 | 0.00 | 8845.7954545454545455 |
 ```
+
+> 단가합계 ÷ 행수(45)를 직접 계산하면 평균단가와 다릅니다. 이유는 1-4에서 봅니다.
 
 ### 1-2. ROUND로 반올림 {keep}
 
@@ -74,7 +76,7 @@ SELECT ROUND(AVG(po_price), 1) AS 평균단가
 
 :::try 생각해 보기 — 통화가 섞이면?
 `WHERE currency = 'KRW'`를 빼고 `SELECT SUM(po_price) FROM part_sourcing;`을 실행하면 `389342.90`이 나옵니다. 오류는 없지만, 이 숫자는 **원화 45행 + 달러 7행을 그냥 더한 값**이라 의미가 없습니다.
-SQL은 단위를 검사해 주지 않습니다. ==합계·평균을 내기 전에 단위(통화, UOM)가 같은지 먼저 확인==하세요. 
+SQL은 단위를 검사해 주지 않습니다. ==합계·평균을 내기 전에 단위(통화, UOM)가 같은지 먼저 확인==하세요.
 :::
 
 
@@ -146,7 +148,7 @@ SELECT COUNT(*)                 AS 전체행
 
 - `AVG`는 **NULL이 아닌 4행**으로 나눕니다: 14200 ÷ 4 = **3550**
 - `SUM / COUNT(*)`는 **5행**으로 나눕니다: 14200 ÷ 5 = **2840**
-- 어느 쪽이 맞는지는 질문에 달려 있습니다. ==“단가를 모르는 부품을 빼고 평균”==이면 `AVG`, “모르는 것을 0원으로 보고 평균”이면 NULL을 0으로 바꿔 계산해야 합니다
+- 어느 쪽이 맞는지는 질문에 달려 있습니다. ==“단가를 모르는 부품을 빼고 평균”==이면 `AVG`, “모르는 것을 0원으로 보고 평균”이면 NULL을 0으로 바꿔 계산해야 합니다.
 
 ### 1-5. 집계 결과와 일반 컬럼은 함께 쓸 수 없습니다 {keep}
 
@@ -159,9 +161,9 @@ SELECT vendor_code, COUNT(*)
 ERROR:  column "part_sourcing.vendor_code" must appear in the GROUP BY clause or be used in an aggregate function
 ```
 
-`COUNT(*)`는 테이블 전체에서 **1행**을 만들고, `vendor_code`는 **52행**이 있습니다. 
+`COUNT(*)`는 테이블 전체에서 **1행**을 만들고, `vendor_code`는 **52행**이 있습니다.
 행 개수가 맞지 않아 한 결과표에 담을 수 없습니다.
-오류 메시지가 해결 방법도 알려 줍니다. → `vendor_code`를 **GROUP BY에 넣으라**는 뜻입니다
+오류 메시지가 해결 방법도 알려 줍니다. → `vendor_code`를 **GROUP BY에 넣으라**는 뜻입니다.
 
 ### 1-6. 확인 문제 — HR 데이터 {keep}
 
@@ -170,7 +172,7 @@ ERROR:  column "part_sourcing.vendor_code" must appear in the GROUP BY clause or
 :::try
 **[복습]** `employees` 전체 직원의 직원 수, 급여 합계, 최고 급여, 최저 급여, 평균 급여를 구하세요. 별칭은 `emp_cnt`, `sal_sum`, `max_sal`, `min_sal`, `avg_sal`이고, 평균은 소수 둘째 자리까지 반올림합니다.
 
-**[응용]** 아래 쿼리를 실행하고, 다섯 개의 숫자가 왜 서로 다른지 설명하세요.
+**[응용]** 아래 쿼리를 실행하고, 다섯 개의 숫자가 각각 무엇을 센 것인지 설명하세요. (같은 숫자가 나와도 빠진 행은 다를 수 있습니다.)
 
 ```sql
 SELECT COUNT(*)                      AS 전체
@@ -217,6 +219,8 @@ SELECT COUNT(*)              AS emp_cnt
 - `COUNT(manager_id)` = 106: 상사가 없는 직원 1명(100 Steven King, 사장) 제외
 :::
 
+> 확인 문제를 마치면 `SET search_path TO bom;`으로 돌아옵니다.
+
 ## 2. GROUP BY — 기준 컬럼으로 묶기
 
 ### 2-1. GROUP BY의 모양과 실행 순서 {keep}
@@ -226,33 +230,37 @@ SELECT   기준 컬럼, 집계 함수      -- ⑤
   FROM   테이블                    -- ①
  WHERE   행 조건                   -- ②
  GROUP BY 기준 컬럼                -- ③ 같은 값끼리 묶어 그룹마다 1행
- HAVING  그룹 조건                 -- ④ (3장)
+ HAVING  그룹 조건                 -- ④ (3-1에서)
  ORDER BY 정렬                     -- ⑥
 ```
 
-**GROUP BY 쓰는 순서 (기존 교안 「GROUP BY 프로세스」)**
+**GROUP BY를 쓰는 세 단계**
 
 1. 질문에서 **“~별”** 을 찾습니다. → 그 컬럼이 `GROUP BY` 기준입니다. (“UIT**별** 부품 수” → `GROUP BY uit`)
 2. 그룹마다 구할 값을 **집계 함수**로 씁니다. (“부품 **수**” → `COUNT(*)`)
 3. `SELECT`에는 **GROUP BY 기준 컬럼**과 **집계 함수**만 씁니다.
 
+:::teacher 강사 확인
+- 위 세 단계는 기존 교안 「GROUP BY 프로세스」에 해당합니다.
+:::
+
 ### 2-1. 실행 순서 따라가기 {keep}
 
 ```stepper
 {
-  "title": "국가별 협력사 수 — 실제 실행 순서",
+  "title": "국가별 업체 수 — 실제 실행 순서",
   "code": "SELECT country, COUNT(*) AS vendor_cnt\n  FROM vendor\n GROUP BY country\n ORDER BY vendor_cnt DESC, country;",
   "steps": [
-    {"line": 1, "note": "① FROM — vendor 테이블 12행을 모두 가져옵니다.",
+    {"line": 1, "note": "① FROM — vendor 테이블 12행을 모두 가져옵니다. (이 쿼리에는 WHERE·HAVING이 없어 ②·④는 건너뜁니다.)",
      "cols": ["vendor_code", "vendor_name", "country"],
      "rows": [["V1001","한빛정밀(주)","KR"],["V1002","대양화학(주)","KR"],["V1003","세진전자(주)","KR"],["V1004","AsiaComp Co., Ltd.","CN"],["V1005","NanoChip Semiconductor","TW"],["V1006","우성사출(주)","KR"],["V1007","Global Steel Trading","JP"],["V1008","동아포장(주)","KR"],["V1009","Pacific Motor Parts","VN"],["V1010","한성고무(주)","KR"],["V1011","태양전장(주)","KR"],["V1012","LG 사내 부품라인(C1)","KR"]]},
-    {"line": 2, "note": "② GROUP BY — country가 같은 행끼리 모읍니다. 12행이 CN·JP·KR·TW·VN 5개 그룹이 됩니다.",
+    {"line": 2, "note": "③ GROUP BY — country가 같은 행끼리 모읍니다. 12행이 CN·JP·KR·TW·VN 5개 그룹이 됩니다.",
      "cols": ["country", "vendor_code", "vendor_name"],
      "rows": [["CN","V1004","AsiaComp Co., Ltd."],["JP","V1007","Global Steel Trading"],["KR","V1001","한빛정밀(주)"],["KR","V1002","대양화학(주)"],["KR","V1003","세진전자(주)"],["KR","V1006","우성사출(주)"],["KR","V1008","동아포장(주)"],["KR","V1010","한성고무(주)"],["KR","V1011","태양전장(주)"],["KR","V1012","LG 사내 부품라인(C1)"],["TW","V1005","NanoChip Semiconductor"],["VN","V1009","Pacific Motor Parts"]], "hot": ["country"]},
-    {"line": 0, "note": "③ SELECT — 그룹마다 1행. 기준 컬럼 country와 COUNT(*)만 남습니다. vendor_name은 그룹 안에 여러 개라 쓸 수 없습니다.",
+    {"line": 0, "note": "⑤ SELECT — 그룹마다 1행. 기준 컬럼 country와 COUNT(*)만 남습니다. vendor_name은 그룹 안에 여러 개라 쓸 수 없습니다.",
      "cols": ["country", "vendor_cnt"],
      "rows": [["CN",1],["JP",1],["KR",8],["TW",1],["VN",1]], "hot": ["vendor_cnt"]},
-    {"line": 3, "note": "④ ORDER BY — SELECT 다음이므로 별칭 vendor_cnt로 정렬할 수 있습니다.",
+    {"line": 3, "note": "⑥ ORDER BY — SELECT 다음이므로 별칭 vendor_cnt로 정렬할 수 있습니다.",
      "cols": ["country", "vendor_cnt"],
      "rows": [["KR",8],["CN",1],["JP",1],["TW",1],["VN",1]], "hot": ["vendor_cnt"]}
   ]
@@ -405,7 +413,7 @@ SELECT model_part_no
 :::
 
 - 냉장고(`TRF38316001`) BOM 39행, 세탁기(`TWM61868701`) BOM 43행이 레벨별로 나뉘었습니다.
-- 두 모델 모두 **3레벨**까지 있습니다. 재귀 CTE로 이 레벨을 따라 내려가며 전개합니다.
+- 두 모델 모두 **3레벨**까지 있습니다. 이 레벨을 따라 내려가며 전개하는 방법(재귀 CTE)은 Day 3에서 배웁니다.
 
 ### 2-7. NULL도 하나의 그룹이 됩니다 {keep}
 
@@ -479,7 +487,6 @@ SELECT COUNT(*) AS 전체
 :::error 비율이 66으로 나온다면 — 정수 ÷ 정수
 `… * 100 / COUNT(*)`처럼 `100`(정수)을 쓰면 결과가 `66`(몫)만 나옵니다. 3단원 2-5에서 본 것처럼 ==`100.0`으로 소수를 섞어야== `66.7`이 나옵니다.
 
-:::cols
 ```sql
 SELECT SUM(CASE WHEN is_domestic = 'Y' THEN 1 ELSE 0 END) * 100 / COUNT(*) AS ratio
   FROM vendor;
@@ -490,7 +497,6 @@ SELECT SUM(CASE WHEN is_domestic = 'Y' THEN 1 ELSE 0 END) * 100 / COUNT(*) AS ra
 | --- |
 | 66 |
 ```
-:::
 :::
 
 ### 2-8. Make / Buy 비중 {keep}
@@ -544,7 +550,7 @@ ERROR:  column "part_master.description_kr" must appear in the GROUP BY clause o
 **[복습]** 부서별 최고 급여와 최저 급여를 구하세요. 별칭은 `max_sal`, `min_sal`이고, 부서가 NULL인 직원은 제외하며, 부서 순으로 정렬합니다.
 
 **[응용]** 부서 50·80에 대해 **부서별·직책별** 직원 수와 급여 합계를 구하세요. 별칭은 `emp_cnt`, `sal_sum`이고, 부서 → 직책 순으로 정렬합니다.
-결과에서 `SA_REP` 직원 수를 확인한 뒤, 1장 확인 문제의 `COUNT(department_id)` 결과와 연결해 설명해 보세요. (힌트: 전체 `SA_REP`는 30명입니다.)
+결과에서 `SA_REP` 직원 수를 확인한 뒤, 1-6 확인 문제 [응용]의 `COUNT(department_id)` 결과와 연결해 설명해 보세요. (힌트: 전체 `SA_REP`는 30명입니다.)
 :::
 
 ### 2-10. 확인 문제 답 — 복습 {keep}
@@ -608,6 +614,8 @@ SELECT department_id
 `SA_REP`는 전체 30명인데 부서 80에는 **29명**입니다. 부서가 NULL인 `SA_REP` 1명(178 Kimberely Grant)이 `WHERE department_id IN (50, 80)`에서 빠졌기 때문입니다.
 :::
 
+> 확인 문제를 마치면 `SET search_path TO bom;`으로 돌아옵니다.
+
 ## 3. HAVING — 그룹을 고르는 조건
 
 ### 3-1. HAVING의 모양 {keep}
@@ -625,20 +633,20 @@ SELECT   기준 컬럼, 집계 함수      -- ⑤
 
 ```stepper
 {
-  "title": "협력사가 2곳 이상인 국가 — 실제 실행 순서",
+  "title": "업체가 2곳 이상인 국가 — 실제 실행 순서",
   "code": "SELECT country, COUNT(*) AS vendor_cnt\n  FROM vendor\n GROUP BY country\nHAVING COUNT(*) >= 2\n ORDER BY vendor_cnt DESC;",
   "steps": [
-    {"line": 1, "note": "① FROM — vendor 테이블 12행을 모두 가져옵니다.",
+    {"line": 1, "note": "① FROM — vendor 테이블 12행을 모두 가져옵니다. (이 쿼리에는 WHERE가 없어 ②는 건너뜁니다.)",
      "cols": ["vendor_code", "vendor_name", "country"],
      "rows": [["V1001","한빛정밀(주)","KR"],["V1002","대양화학(주)","KR"],["V1003","세진전자(주)","KR"],["V1004","AsiaComp Co., Ltd.","CN"],["V1005","NanoChip Semiconductor","TW"],["V1006","우성사출(주)","KR"],["V1007","Global Steel Trading","JP"],["V1008","동아포장(주)","KR"],["V1009","Pacific Motor Parts","VN"],["V1010","한성고무(주)","KR"],["V1011","태양전장(주)","KR"],["V1012","LG 사내 부품라인(C1)","KR"]]},
-    {"line": 2, "note": "② GROUP BY — country별로 묶어 5개 그룹을 만듭니다. 그룹마다 COUNT(*)를 셀 수 있게 됩니다.",
+    {"line": 2, "note": "③ GROUP BY — country별로 묶어 5개 그룹을 만듭니다. 그룹마다 COUNT(*)를 셀 수 있게 됩니다.",
      "cols": ["country", "COUNT(*)"],
      "rows": [["CN",1],["JP",1],["KR",8],["TW",1],["VN",1]], "hot": ["country"]},
-    {"line": 3, "note": "③ HAVING — 그룹 단위로 조건을 검사합니다. COUNT(*) >= 2가 아닌 4개 그룹이 탈락합니다.", "dim": [0,1,3,4], "hot": ["COUNT(*)"]},
-    {"line": 0, "note": "④ SELECT — 남은 그룹에서 country와 COUNT(*)를 꺼내고 별칭 vendor_cnt를 붙입니다.",
+    {"line": 3, "note": "④ HAVING — 그룹 단위로 조건을 검사합니다. COUNT(*) >= 2가 아닌 4개 그룹이 탈락합니다.", "dim": [0,1,3,4], "hot": ["COUNT(*)"]},
+    {"line": 0, "note": "⑤ SELECT — 남은 그룹에서 country와 COUNT(*)를 꺼내고 별칭 vendor_cnt를 붙입니다.",
      "cols": ["country", "vendor_cnt"],
      "rows": [["KR",8]], "hot": ["vendor_cnt"]},
-    {"line": 4, "note": "⑤ ORDER BY — 마지막으로 정렬합니다. (남은 그룹이 1개라 순서는 그대로)",
+    {"line": 4, "note": "⑥ ORDER BY — 마지막으로 정렬합니다. (남은 그룹이 1개라 순서는 그대로)",
      "cols": ["country", "vendor_cnt"],
      "rows": [["KR",8]]}
   ]
@@ -698,7 +706,7 @@ ERROR:  aggregate functions are not allowed in WHERE
     {"line": 1, "note": "① FROM — vendor 테이블 12행을 가져옵니다.",
      "cols": ["vendor_code", "vendor_name", "country"],
      "rows": [["V1001","한빛정밀(주)","KR"],["V1002","대양화학(주)","KR"],["V1003","세진전자(주)","KR"],["V1004","AsiaComp Co., Ltd.","CN"],["V1005","NanoChip Semiconductor","TW"],["V1006","우성사출(주)","KR"],["V1007","Global Steel Trading","JP"],["V1008","동아포장(주)","KR"],["V1009","Pacific Motor Parts","VN"],["V1010","한성고무(주)","KR"],["V1011","태양전장(주)","KR"],["V1012","LG 사내 부품라인(C1)","KR"]]},
-    {"line": 2, "note": "② WHERE — 행을 한 줄씩 검사하는 단계입니다. 아직 묶이지 않았으니 「몇 개인지」 셀 그룹이 없습니다. → ERROR: aggregate functions are not allowed in WHERE", "hot": ["country"]},
+    {"line": 2, "note": "② WHERE — 행을 한 줄씩 검사하는 단계입니다. 아직 묶이지 않았으니 「몇 개인지」 셀 그룹이 없습니다. → ERROR: aggregate functions are not allowed in WHERE (실제로는 실행 전에 걸러집니다. 순서로 이해하기 위한 그림입니다.)", "hot": ["country"]},
     {"line": 3, "note": "③ GROUP BY — 그룹은 여기서야 만들어집니다. 그래서 그룹 조건은 GROUP BY 다음의 HAVING에 써야 합니다.",
      "cols": ["country", "COUNT(*)"],
      "rows": [["CN",1],["JP",1],["KR",8],["TW",1],["VN",1]], "hot": ["COUNT(*)"]}
@@ -793,7 +801,7 @@ HAVING AVG(po_price) >= 10000
 | 집계 함수 | 쓸 수 없음 | 씀 |
 | 이 예제에서 | 원화 행만 남김 | 평균 10,000 이상 업체만 남김 |
 
-> ==WHERE는 일반 조건으로 행을 선별하고, HAVING은 그룹화 이후 집계 함수에 대한 조건을 선별합니다.==
+> ==WHERE는 일반 조건으로 행을 고르고, HAVING은 묶은 뒤 집계 함수 조건으로 그룹을 고릅니다.==
 
 ### 3-5. HAVING으로 데이터 점검하기 {keep}
 
@@ -861,8 +869,8 @@ HAVING COUNT(DISTINCT model_part_no) = 2
 
 ### 3-5. used_cnt와 model_cnt 읽기 {keep}
 
-- `used_cnt`(`COUNT(*)`)는 **BOM 행 수**, `model_cnt`(`COUNT(DISTINCT model_part_no)`)는 **쓰이는 모델 종류 수**입니다. HAVING은 `model_cnt`로 걸렀기 때문에 `used_cnt`가 3인 부품도 나옵니다.
-- `used_cnt`가 3이면 한 모델 안에서 **서로 다른 상위 조립품**에 두 번 쓰인 것입니다.
+- `used_cnt`(`COUNT(*)`)는 **BOM 행 수**, `model_cnt`(`COUNT(DISTINCT model_part_no)`)는 **쓰이는 모델 종류 수**입니다. HAVING은 모델 종류 수(`COUNT(DISTINCT model_part_no)`)로 걸렀기 때문에 `used_cnt`가 3인 부품도 나옵니다.
+- `used_cnt`가 3이면 한 모델 안에서 **서로 다른 상위 조립품**에 두 번 쓰인 것입니다. 예를 들어 아래 두 부품이 그렇습니다.
   - `FTP68745401`(필라멘트 테이프): 냉장고의 냉동 사이클 조립체·포장 조립체 + 세탁기의 포장 조립체
   - `RRS44997401`(ABS 수지): 냉장고의 핸들 조립체·내상 라이너 + 세탁기의 도어 조립체
 - `HAVING`에 쓰는 집계 함수는 `SELECT`에 꼭 출력하지 않아도 됩니다. 여기서는 읽기 쉽게 `model_cnt`로 함께 출력했습니다.
@@ -930,11 +938,13 @@ HAVING AVG(salary) >= 10000
 ```
 :::
 
+> 확인 문제를 마치면 `SET search_path TO bom;`으로 돌아옵니다.
+
 ## 4. 복습 문제
 
 ### 4-0. 복습 문제 안내 {keep}
 
-> 범위: 집계 함수 · GROUP BY · HAVING · ORDER BY 전체. `bom` 스키마의 테이블로 풀어 주세요. (출력 순서는 `ORDER BY` 기준)
+> 범위: 집계 함수 · GROUP BY · HAVING · ORDER BY 전체. `bom` 스키마의 테이블로 풀어 주세요. (`SET search_path TO bom;` 출력 순서는 `ORDER BY` 기준)
 
 ```icons 여섯 문항
 layers | 1 · GROUP BY | 대분류별 부품 수 | rose
@@ -984,7 +994,7 @@ calendar | 6 · (심화) 식으로 묶기 | 등록월별 부품 수 | hot
 | Phantom | 7 |
 ```
 
-**4.** `part_sourcing`에서 구매 속성(`line_type`)별 소싱 건수(`src_cnt`), 평균 리드타임(`avg_lt`, 소수 첫째 자리 반올림), 최대 리드타임(`max_lt`)을 구하고 평균 리드타임이 긴 순으로 정렬하세요. [힌트: ROUND(AVG(…), 1)]
+**4.** `part_sourcing`에서 구매 속성(`line_type`)별 소싱 품목 수(`src_cnt`), 평균 리드타임(`avg_lt`, 소수 첫째 자리 반올림), 최대 리드타임(`max_lt`)을 구하고 평균 리드타임이 긴 순으로 정렬하세요. [힌트: ROUND(AVG(…), 1)]
 
 ```result 출력 결과 (총 4행)
 | line_type | src_cnt | avg_lt | max_lt |
@@ -1009,7 +1019,7 @@ calendar | 6 · (심화) 식으로 묶기 | 등록월별 부품 수 | hot
 
 **6.** (심화) `part_master`에서 등록월(`created_at`의 연-월, 별칭 `reg_month`)별로 부품이 몇 개 등록되었는지 구하되, 7개 이상 등록된 달만 등록월 순으로 출력하세요. 단, 정확한 계산을 위해 `created_at`이 NULL인 행은 묶기 전에 제외하세요.
 
-[힌트] (1) GROUP BY에는 컬럼뿐 아니라 가공한 식도 쓸 수 있습니다. 예: `GROUP BY TO_CHAR(created_at, 'YYYY-MM')` (2) GROUP BY에 쓴 식(또는 그 별칭)만 SELECT에 쓸 수 있습니다. (3) 현재 `created_at`이 NULL인 데이터는 없지만, WHERE로 먼저 제외하는 습관을 들입니다.
+[힌트: (1) GROUP BY에는 컬럼뿐 아니라 가공한 식도 쓸 수 있습니다. 예: `GROUP BY TO_CHAR(created_at, 'YYYY-MM')` — `TO_CHAR(날짜, 'YYYY-MM')`은 날짜를 `2025-01` 같은 연-월 글자로 바꾸는 함수입니다. (2) SELECT에는 GROUP BY에 쓴 식(또는 그 별칭)과 집계 함수만 쓸 수 있습니다. (3) 현재 `created_at`이 NULL인 데이터는 없지만, WHERE로 먼저 제외하는 습관을 들입니다.]
 
 ```result 출력 결과 (총 3행)
 | reg_month | part_cnt |
@@ -1086,7 +1096,11 @@ HAVING COUNT(*) >= 7
 ```
 
 - 5번에서 `WHERE currency = 'KRW'`를 빼면 달러 금액이 원화와 섞여 합계가 틀어집니다(1-2 생각해 보기).
-- 6번은 기존 HR 복습 문제 「연도별 입사자 수」와 같은 유형입니다. `GROUP BY reg_month`처럼 별칭으로 묶어도 PostgreSQL에서는 같은 결과가 나옵니다(2-8).
+- 6번은 `GROUP BY reg_month`처럼 별칭으로 묶어도 PostgreSQL에서는 같은 결과가 나옵니다(2-8).
+:::
+
+:::teacher 강사 확인
+- 6번은 기존 HR 복습 문제 「연도별 입사자 수」와 같은 유형입니다.
 :::
 
 ## 5. 정리

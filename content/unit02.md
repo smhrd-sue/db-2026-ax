@@ -19,7 +19,7 @@ title: PostgreSQL 설치와 실습 데이터 적재
 
 ### 1-1. ERD를 실제 DB로 만드는 시간 {keep}
 
-1장에서 그린 ERD·관계 모델을 **실제 DB로 만드는 시간**입니다. 1장 7. 물리적 모델링의 결과물인 `schema_postgres.sql`을 직접 실행합니다.
+1장에서 그린 ERD·관계 모델을 **실제 DB로 만드는 시간**입니다. 1장 6. 물리적 모델링의 결과물인 `schema_postgres.sql`을 직접 실행합니다.
 
 ```flow 이번 시간의 흐름
 download | 설치 | PostgreSQL 18 | ivory
@@ -40,7 +40,7 @@ search | 첫 쿼리 | pgAdmin 4 | hot
 | 4 | 데이터 적재 | SQL Shell (psql) | `bom` 스키마 + 테이블 17개 + 데이터 |
 | 5 | 적재 확인 | SQL Shell (psql) | 테이블별 행 수가 맞는지 확인 |
 | 6 | 첫 쿼리 | pgAdmin 4 | `part_master` 조회 |
-| 7 | 마지막 복습 | SQL Shell (psql) | `hr` 스키마 + 테이블 7개 직접 적재 |
+| 7 | 복습 | SQL Shell (psql) | `hr` 스키마 + 테이블 7개 직접 적재 |
 | 8 | 데이터 탐색 | pgAdmin 4 | 품번·UIT·Status·UOM·Supply Type 코드 읽기 |
 
 ## 2. 설치 전에 알아 둘 것 — 서버와 클라이언트
@@ -55,7 +55,7 @@ square-terminal | SQL Shell (psql) | 글자로 명령을 입력하는 클라이�
 monitor | pgAdmin 4 | 마우스로 테이블을 보고 쿼리를 실행하는 그래픽 클라이언트 | plum | [비유] 창고 관리 화면
 ```
 
-> 두 도구가 같은 서버에 접속합니다. 데이터 **적재는 psql**, 이후 **조회 실습은 pgAdmin**으로 나눠 씁니다. 적재 스크립트가 psql에서만 동작하는 `\copy` 명령을 쓰기 때문입니다(6-3에서 다룹니다).
+> 두 도구가 같은 서버에 접속합니다. 데이터 **적재는 psql**, 이후 **조회 실습은 pgAdmin**으로 나눠 씁니다. 적재 스크립트가 psql에서만 동작하는 `\copy` 명령을 쓰기 때문입니다(6-3, 8-4에서 다룹니다).
 
 ## 3. PostgreSQL 설치 (Windows)
 
@@ -71,11 +71,11 @@ unit02/01-download-windows.png
 
 ### 3-1. EDB 다운로드 표에서 고르기 {keep}
 
-```shot ② EDB 다운로드 표 — 18.x 행의 「Windows x86-64」 열 아이콘을 누릅니다. (캡처 시점 최신은 18.6)
+```shot ② EDB 다운로드 표 — 18.x 행의 「Windows x86-64」 열 아이콘을 누릅니다. 맨 위 행이 다른 버전이어도 18.x 행을 고릅니다. (캡처 시점 18.6)
 unit02/02-edb-installer.png
 ```
 
-> 공식 다운로드 페이지는 Windows용 설치 프로그램으로 PostgreSQL 13~18을 제공하며, 설치 프로그램에 **PostgreSQL 서버·pgAdmin·StackBuilder**가 함께 들어 있다고 안내합니다.
+> 공식 다운로드 페이지는 Windows용 설치 프로그램으로 PostgreSQL 여러 버전을 제공하며, 설치 프로그램에 **PostgreSQL 서버·pgAdmin·StackBuilder**가 함께 들어 있다고 안내합니다.
 > 내려받을 때 회원가입이나 로그인은 필요하지 않습니다.
 
 ### 3-2. 설치 마법사 따라가기
@@ -158,7 +158,7 @@ C:\bom_lab
 
 > ==폴더 경로에 한글과 띄어쓰기를 넣지 마세요.== `바탕 화면\DB 수업`처럼 한글·공백이 있으면 경로를 따옴표로 정확히 감싸야 해서 실수가 잦습니다. `C:\bom_lab`처럼 짧은 영문 경로를 권장합니다.
 
-# 실습데이터 적재하기 
+# 실습 데이터 적재하기
 
 ## 5. SQL Shell (psql)로 접속하기
 
@@ -198,7 +198,7 @@ postgres=#
 
 > 비밀번호를 입력해도 글자가 나타나지 않는 것은 보안 때문입니다. 그대로 입력하고 Enter를 누르세요.
 >
-> 맨 위에 `Console code page (949) differs from Windows code page …` 같은 경고가 보일 수 있습니다. 화면 문자 코드에 대한 안내이며, 이번 적재는 스크립트가 CSV를 `UTF8`로 읽도록 지정되어 있어 그대로 진행해도 됩니다.
+> `psql (18.x)` 아래에 `Console code page (949) differs from Windows code page …` 같은 경고가 보일 수도 있습니다. 화면 문자 코드에 대한 안내이며, 이번 적재는 스크립트가 CSV를 `UTF8`로 읽도록 지정되어 있어 그대로 진행해도 됩니다.
 
 :::teacher 강사 확인
 - 위 코드페이지 경고가 뜬 상태에서 psql 창의 한글 출력이 깨지는지는 수업 PC에서 미리 확인하세요. 깨지더라도 데이터 자체는 `ENCODING 'UTF8'`로 적재되므로, 한글이 들어간 결과는 8절의 pgAdmin에서 확인하게 하면 됩니다.
@@ -307,7 +307,7 @@ file-spreadsheet | \copy × 17 | CSV → 테이블 | lime
 
 ### 6-3. 왜 코드표부터 넣을까요? {keep}
 
-`part_master.uit`는 `code_uit`를 참조하는 FK입니다. 부모(코드표)가 먼저 있어야 자식(part_master)에 값을 넣을 수 있습니다(1장 6-1 참조 무결성). 순서를 바꾸면 FK 위반 오류가 납니다.
+`part_master.uit`는 `code_uit`를 참조하는 FK입니다. 부모(코드표)가 먼저 있어야 자식(part_master)에 값을 넣을 수 있습니다(1장 5-2 참조 무결성). 순서를 바꾸면 FK 위반 오류가 납니다.
 
 ```flow
 list | 코드표 | code_uit 등 (부모) | lime
@@ -318,7 +318,7 @@ package | part_master | uit → code_uit (자식) | plum
 - `CSV` — 쉼표로 구분된 파일
 - `HEADER` — 첫 줄은 컬럼 이름이므로 건너뜀
 - `ENCODING 'UTF8'` — 파일 글자 코드가 UTF-8 (한글 품명이 깨지지 않게)
-- `NULL ''` — 빈 칸은 NULL로 넣음 (`part_master`, `part_sourcing`만 지정 → `svc_code`, `po_price`의 빈 값)
+- `NULL ''` — 빈 칸을 NULL로 넣음. CSV 형식의 기본 동작을 명시한 것으로, `svc_code`, `po_price`에 빈 값이 있는 `part_master`, `part_sourcing`에만 적혀 있음
 :::
 
 ### 6-4. DB · 스키마 · 테이블의 관계 {keep}
@@ -378,7 +378,7 @@ UNION ALL SELECT 'code_cosp',           COUNT(*) FROM bom.code_cosp;
 ```stats 제공 CSV 행 수 기준
 table | 17 | 테이블
 rows-3 | 360 | 전체 행
-package | 68 | 부품
+package | 68 | 품번
 list-tree | 82 | BOM 라인
 ```
 
@@ -422,7 +422,7 @@ ERROR:  relation "part_master" does not exist
 
 ### 7-3. 해결 방법 두 가지 {keep}
 
-```sql ① 접속할 때마다 한 번 실행 (운영안 방식)
+```sql ① 접속할 때마다 한 번 실행 (수업 기본 방식)
 SET search_path TO bom;
 ```
 
@@ -437,7 +437,7 @@ ALTER DATABASE bom_lab SET search_path TO bom, public;
 - README 3장 안내대로, `exercises_mysql.sql`을 PostgreSQL에서 쓸 때는 `bom.` 접두사를 붙이거나 search_path를 설정해야 합니다.
 :::
 
-# 실습데이터 조회하기
+# 실습 데이터 조회하기
 
 ## 8. pgAdmin 4로 접속하기
 
@@ -535,8 +535,8 @@ SELECT * FROM part_master LIMIT 10;
 
 ### 9-2. 1장과 연결해서 읽어 보기 {keep}
 
-- `part_no` = 1장 5-2 예시 ③의 **품번**, `part_master`의 **PK**
-- `uom`, `uit`, `status_code` = 각각 `code_uom`, `code_uit`, `code_status`를 참조하는 **FK** (1장 8-4 FK 정리표)
+- `part_no` = 1장 4-2 예시 ③의 **품번**, `part_master`의 **PK**
+- `uom`, `uit`, `status_code` = 각각 `code_uom`, `code_uit`, `code_status`를 참조하는 **FK** (1장 7-4 FK 정리표)
 - `uit`가 `G`인 행 → `code_uit`에서 `G`의 뜻을 찾으면 됩니다. 이렇게 **두 테이블을 잇는 방법(JOIN)** 을 뒤에서 배웁니다.
 
 ### 9-3. 직접 해 보기 {keep}
@@ -544,16 +544,16 @@ SELECT * FROM part_master LIMIT 10;
 :::try 직접 해 보기
 1. `vendor` 테이블 전체를 조회해 보세요. 행이 몇 개 나오나요?
 2. `code_uit` 테이블을 조회해 `G`와 `D`가 각각 무슨 뜻인지 찾아보세요.
-3. pgAdmin 왼쪽 트리에서 `part_sourcing` → **Constraints**를 펼쳐 PK와 FK가 몇 개 있는지 확인해 보세요. 1장 8-4 관계 모델 그림과 비교합니다.
+3. pgAdmin 왼쪽 트리에서 `part_sourcing` → **Constraints**를 펼쳐 PK와 FK가 몇 개 있는지 확인해 보세요. 1장 7-4 관계 모델 그림과 비교합니다.
 :::
 
 :::answer
 1. 12행 (`SELECT * FROM vendor;`)
-2. `SELECT * FROM code_uit;` — `meaning_kr` 컬럼에서 확인합니다.
+2. `SELECT * FROM code_uit;` — `meaning_kr` 컬럼에서 확인합니다. G = 국내 구매품, D = 수입 구매품
 3. PK 1개(`part_no + vendor_code + site_code` 복합키), FK 3개(`part_no` → `part_master`, `vendor_code` → `vendor`, `line_type` → `code_line_type`). `schema_postgres.sql`의 `part_sourcing` 정의와 같습니다.
 :::
 
-## 10. 마지막 복습 — hr 데이터도 적재하기
+## 10. 복습 — hr 데이터도 적재하기
 
 ### 10-1. 같은 순서로 한 번 더 — 파일 준비 {keep}
 
@@ -580,7 +580,7 @@ PostgreSQL 서버 (localhost:5432)
 ```
 
 - `INSERT 0 1`은 **한 행을 넣었다**는 뜻입니다. 행마다 한 줄씩 나오므로 화면이 길게 올라갑니다.
-- 스크립트가 끝나면 `SET search_path TO hr;`이 실행된 상태입니다. 이제 이 창에서 `part_master`만 쓰면 못 찾으니, `bom` 테이블을 쓰려면 다시 `SET search_path TO bom;`을 실행하세요.
+- 스크립트가 끝나면 `SET search_path TO hr;`이 실행된 상태입니다. 이제 이 창에서 `part_master`만 쓰면 못 찾으니, `bom` 테이블도 쓰려면 `SET search_path TO bom, hr;`을 실행하세요(10-5).
 
 ### 10-2. 화면에 나오는 내용 {keep}
 
@@ -610,7 +610,7 @@ COMMENT
 | 2 | `CREATE TABLE …` × 7 | `regions` → `countries` → `locations` → `departments` → `jobs` → `employees` → `job_history` 순서로 생성 | ==부모 먼저, 자식 나중== |
 | 3 | `INSERT INTO … VALUES (…);` | 데이터를 한 행씩 넣음 | `\copy` 대신 SQL 문으로 넣는 방법 |
 | 4 | `ALTER TABLE departments ADD CONSTRAINT dept_mgr_fk …` | 부서장(`manager_id`) → 직원 FK를 **데이터를 다 넣은 뒤** 추가 | 부서와 직원이 서로를 참조하기 때문 |
-| 5 | `CREATE INDEX` · `CREATE VIEW` · `COMMENT ON` | 검색용 인덱스, 조인 뷰 `emp_details_view`, 테이블·컬럼 설명 | 1장 7. 물리적 모델링(인덱스) |
+| 5 | `CREATE INDEX` · `CREATE VIEW` · `COMMENT ON` | 검색용 인덱스, 조인 뷰 `emp_details_view`, 테이블·컬럼 설명 | 1장 6. 물리적 모델링(인덱스) |
 
 ### 10-3. 4번은 왜 나중에 할까요? {keep}
 
@@ -626,15 +626,15 @@ users | employees | 소속 부서가 **부서**를 참조 | lime | [FK] `emp_dep
 :::try 직접 해 보기
 1. `\dn`으로 스키마 목록을 보고, `bom`과 `hr`이 둘 다 있는지 확인하세요.
 2. `\dt hr.*`로 `hr` 스키마의 테이블이 몇 개인지 세어 보세요. 뷰는 `\dv hr.*`로 봅니다.
-3. 다음 장의 쿼리를 실행해 행 수가 기대값과 같은지 확인하세요.
-4. pgAdmin 왼쪽 트리에서 `bom_lab > Schemas > hr > Tables > employees > Constraints`를 펼쳐 FK가 몇 개이고, 각각 어느 테이블을 가리키는지 적어 보세요.
+3. 아래 「10-4. hr 테이블별 행 수」의 쿼리를 실행해 행 수가 기대값과 같은지 확인하세요.
+4. pgAdmin 왼쪽 트리에서 `bom_lab > Schemas > hr > Tables > employees > Constraints`를 펼쳐 FK가 몇 개이고, 각각 어느 테이블을 가리키는지 적어 보세요. (`hr`이 안 보이면 **Schemas**에서 마우스 오른쪽 클릭 → **Refresh**)
 5. `job_history`의 PK는 컬럼 몇 개로 이루어져 있나요? 1장에서 배운 용어로 무엇이라고 부르나요?
 :::
 
 :::answer
 1. `bom`, `hr`, `public` 세 개가 보입니다.
 2. 테이블 7개, 뷰 1개(`emp_details_view`)
-3. 다음 장의 기대값과 같으면 성공입니다.
+3. 아래 「10-4. hr 테이블별 행 수」의 기대값과 같으면 성공입니다.
 4. FK 3개 — `emp_dept_fk`(→ `departments`), `emp_job_fk`(→ `jobs`), `emp_manager_fk`(→ `employees` **자기 자신**). 직원의 매니저도 직원이라 같은 테이블을 참조합니다. `bom_structure`가 `part_master`를 부모·자식으로 참조하는 것과 비슷한 구조입니다.
 5. 2개(`employee_id + start_date`) → **복합키**. `employee_id`는 `employees`를 참조하는 FK이면서 PK의 일부이므로 `employees`와 `job_history`는 **식별 관계**입니다.
 :::
@@ -703,7 +703,7 @@ ALTER DATABASE bom_lab SET search_path TO bom, hr, public;
 - 복습으로 같은 DB의 **`hr` 스키마**에 테이블 7개, 총 215행을 적재했습니다. 두 스키마를 함께 쓰려면 `SET search_path TO bom, hr;`.
 - 적재 스크립트는 `\copy`(psql 전용)를 쓰므로 **적재는 psql**, **조회는 pgAdmin**.
 - 테이블 이름만 쓰려면 `SET search_path TO bom;`.
-- `schema_postgres.sql` = 1장 7. **물리적 모델링의 결과물**. 1장 ERD의 PK·FK가 여기서 실제 제약조건이 됩니다.
+- `schema_postgres.sql` = 1장 6. **물리적 모델링의 결과물**. 1장 ERD의 PK·FK가 여기서 실제 제약조건이 됩니다.
 :::
 
 ### 12-2. 확인 문제
@@ -724,7 +724,7 @@ A. ① 쿼리 창이 `bom_lab` DB에 접속했는지 ② `SET search_path TO bom
 
 # 데이터 탐색 — 생산 도메인: 품목 관리
 
-## 13. 생산 도메인 — 품목 관리
+## 13. 코드표로 품목 읽기
 
 :::teacher 강사 확인
 - 운영안 Day 1 2H(생산 도메인: 품목 관리)에 해당합니다. 아래 쿼리 결과는 제공 CSV를 PostgreSQL 16에 `schema_postgres.sql`로 적재해 실행한 값과 같습니다.
@@ -739,7 +739,7 @@ SQL을 쓰기 전에 어떤 값이 무슨 뜻인지부터 읽습니다. 의미�
 ```icons
 hash | P/No | 품번 11자리 = 분류코드 3 + 8 | rose | `ECP39799101`
 tag | UIT | 누가 만들고, 어떻게 관리하나 | plum | `code_uit` 11종
-history | Status | 품번의 라이프사이클 1~6 | lime | `code_status` 6종
+history | Status | 품번의 라이프사이클 상태 (번호는 순서가 아님) | lime | `code_status` 6종
 ruler | UOM | 수량을 세는 단위 | ivory | `code_uom` 7종
 truck | Supply Type | BOM에서 자재가 어떻게 공급되나 | hot | `code_supply_type` 3종
 ```
@@ -750,7 +750,7 @@ SET search_path TO bom;
 
 ### 13-2. P/No — 11자리 품번 읽기 {keep}
 
-README 1장: 품번은 **3자리 분류코드 + 8자리**이고, 끝 2자리는 **시리즈**입니다.
+실습 데이터 설명서(README) 1장: 품번은 **3자리 분류코드 + 8자리**이고, 끝 2자리는 **시리즈**입니다.
 
 ```sql
 SELECT part_no
@@ -781,7 +781,7 @@ SELECT part_no
 
 ### 13-2. Description 규칙 — Main Function + Sub {keep}
 
-README 1장: 영문 품명은 `Main Function,Sub` 형식입니다. 쉼표 앞뒤를 `SPLIT_PART`로 나눠 봅니다.
+실습 데이터 설명서(README) 1장: 영문 품명은 `Main Function,Sub` 형식입니다. 쉼표 앞뒤를 `SPLIT_PART`로 나눠 봅니다.
 
 ```sql
 SELECT description
@@ -831,11 +831,11 @@ SELECT p.uit, u.classification, u.maker, u.meaning_kr, COUNT(*) AS part_cnt
 | T | Make item | LG | 사내 조립품, 계획·표준시간·재고 관리 | 6 |
 ```
 
-> `code_uit`에는 11종이 있지만 부품 마스터에는 **7종만** 쓰입니다(C·Q·M·R은 0개).
+> `code_uit`에는 11종이 있지만 품목 마스터에는 **7종만** 쓰입니다(C·Q·M·R은 0개).
 
 ### 13-3. T와 P의 차이 — 재고를 관리하나? {keep}
 
-두 UIT 모두 LG 사내 조립품입니다. 차이는 `meaning_kr`의 「재고 관리」 여부입니다. 재고 테이블과 붙여 확인합니다.
+두 UIT 모두 LG 사내 조립품입니다. 차이는 `meaning_kr`의 「재고 관리」 여부입니다. 재고 테이블과 붙여 **실제로 그런지** 확인합니다.
 
 ```sql
 SELECT p.part_no, p.description_kr, p.uit
@@ -846,7 +846,7 @@ SELECT p.part_no, p.description_kr, p.uit
  ORDER BY p.uit DESC, p.part_no;
 ```
 
-> pgAdmin에서는 NULL이 `[null]`로 보일 수 있습니다. 다음 장의 표는 NULL로 적었습니다.
+> pgAdmin에서는 NULL이 `[null]`로 보일 수 있습니다. 아래 결과표는 NULL로 적었습니다.
 
 ### 13-3. T — 실행 결과 {keep}
 
@@ -861,8 +861,8 @@ SELECT p.part_no, p.description_kr, p.uit
 | EMT68237401 | DD 모터 | T | 900.00 | WH-C1 |
 ```
 
-- T 중에서는 `EMT68237401`(DD 모터)만 재고가 있습니다. README 1장: DD 모터는 사내 부품라인(C1)에서 만들어 메인라인으로 공급하는 T 품목이고, 위치도 `WH-C1`입니다.
-- 나머지 T 5개는 재고 행이 없습니다. 이것이 정상인지는 데이터만으로 판단할 수 없으므로 데이터 사전(3장)의 「확인 필요」 목록에 적습니다.
+- T 중에서는 `EMT68237401`(DD 모터)만 재고가 있습니다. 실습 데이터 설명서(README) 1장: DD 모터는 사내 부품라인(C1)에서 만들어 메인라인으로 공급하는 T 품목이고, 위치도 `WH-C1`입니다.
+- 나머지 T 5개는 재고 행이 없습니다. 코드표의 뜻과 실제 데이터가 다를 수 있다는 예입니다. 이것이 정상인지는 데이터만으로 판단할 수 없으므로 데이터 사전(3장)의 「확인 필요」 목록에 적습니다.
 
 ### 13-3. P — 실행 결과 {keep}
 
@@ -883,7 +883,7 @@ SELECT p.part_no, p.description_kr, p.uit
 
 ### 13-3. G와 D의 차이 — 어디서 사 오나? {keep}
 
-G·D 모두 구매품입니다. G는 국내, D는 수입입니다. 구매 속성 `line_type`과 업체의 `is_domestic`을 함께 봅니다.
+G·D 모두 구매품입니다. G는 국내, D는 수입입니다. 구매 속성 `line_type`과 업체의 `is_domestic`을 함께 봅니다. `line_type`의 D·I는 UIT의 D와 글자만 같은 **다른 코드**이며, 뜻은 `code_line_type`에서 확인합니다.
 
 ```sql
 SELECT p.uit, s.line_type, v.is_domestic
@@ -940,8 +940,8 @@ SELECT * FROM code_status ORDER BY status_code;
 | 6 | MFG Discontinued | Inactive | Add/Change disabled in BOM | 생산 중단 |
 ```
 
-- `active_flag`가 **Inactive(1·5·6)** 이면 BOM에 추가·변경할 수 없습니다. 이런 부품이 BOM에 남아 있으면 품질 이슈입니다(Day 2 6교시).
-- 부품 마스터에는 **1(폐기) 1개, 3(승인) 67개**만 있습니다(4단원 2-3).
+- `active_flag`가 **Inactive(1·5·6)** 인 품번은 더 쓰지 않는 품번입니다(5·6은 BOM 추가·변경 불가, 1은 발주·입고·서비스 불가). 이런 부품이 BOM에 남아 있으면 품질 이슈입니다(Day 2 6교시).
+- 품목 마스터에는 **1(폐기) 1개, 3(승인) 67개**만 있습니다(4단원 2-3).
 
 ### 13-5. UOM — 수량의 단위 {keep}
 
@@ -1010,4 +1010,4 @@ SELECT p.uit, b.supply_type
 ```
 :::
 
-실습 정답 SQL(Q7)이 쓰는 규칙은 세 가지입니다: **P → Phantom, T → Assembly Pull, X → Supplier**. 위 표에서 ==P | Assembly Pull | 1==이 규칙에 맞지 않는 1행입니다(Day 2 6교시에서 찾습니다).
+이 실습 데이터에서 점검하는 규칙은 세 가지입니다: **P → Phantom, T → Assembly Pull, X → Supplier**. 위 표에서 ==P | Assembly Pull | 1==이 규칙에 맞지 않는 1행입니다(Day 2 6교시에서 찾습니다).

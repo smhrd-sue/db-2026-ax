@@ -139,7 +139,7 @@ mail | 메일 발송 | 구매팀 알림 | ivory
 
 > 여러 데이터를 한 곳에 모아 효율적으로 저장·관리하며, ==여러 사용자가 동시에 공유하고 활용==할 수 있도록 만든 기술
 
-다른 말로는 **여러 사용자가 ‘공유’해서 쓸 수 있도록 ’통합’해 ’저장’한 ’운영’ 데이터의 집합**이라고 정의합니다.
+다른 말로는 **여러 사용자가 ‘공유’해서 쓸 수 있도록 ‘통합’해 ‘저장’한 ‘운영’ 데이터의 집합**이라고 정의합니다.
 
 ```icons 데이터베이스를 이루는 네 단어
 users | 공유 | 여러 사용자가 함께 씀 | rose
@@ -194,7 +194,7 @@ user-plus | 언제 저장됐을까? | 바로 회원가입할 때! | plum
 
 
 
-### 2-2. 엑셀로 데이터를 관리하면 안될까? {keep}
+### 2-2. 엑셀로 데이터를 관리하면 안 될까? {keep}
 
 네이버에는 여러 서비스가 있지만, **회원관리**와 **블로그** 두 팀만 예로 들어 보겠습니다.<br> 두 팀은 각자 필요한 데이터를 **각자의 파일**로 가지고 있습니다.
 
@@ -206,9 +206,9 @@ user-plus | 언제 저장됐을까? | 바로 회원가입할 때! | plum
 <br>
 
 - 회원관리팀: 회원을 구분할 **ID**, **이름**, 로그인할 **비밀번호**
-- 블로그팀: 회원인지 알기위한 회원정보, 누가 썼는지 알기 위한 **ID**, **글 제목**, **글 내용**
+- 블로그팀: 회원인지 알기 위한 회원정보, 누가 썼는지 알기 위한 **ID**, **글 제목**, **글 내용**
 
-### 2-2. 엑셀로 데이터를 관리하면 안될까? {keep}
+### 2-2. 엑셀로 데이터를 관리하면 안 될까? {keep}
 
 수강생 한 명이 네이버 블로그를 쓰고 싶어서 회원가입을 했습니다. <br> 그런데 블로그에 들어가니 ==자꾸 로그인하라는 창==이 뜹니다.
 
@@ -241,7 +241,7 @@ moon | 다음 날 업무 | 다시 쌓이고, 또 동기화 | ivory
 
 파일로 보관하면 저장 자체에는 문제가 없지만, 이 방식에는 세 가지 문제가 생깁니다.
 
-- 실시간으로 동기화되지 않아 **서로 다른 정보**를 가지게 됩니다. -> ==실시간 동기화 불가==
+- 실시간으로 동기화되지 않아 **서로 다른 정보**를 가지게 됩니다. → ==실시간 공유 불가==
 - 동기화하는 과정에서 데이터가 **누락**될 수 있습니다. → ==데이터 결함==
 - 같은 정보(ID 등)가 **여러 파일에 중복**됩니다. → ==데이터 중복==
 
@@ -275,7 +275,7 @@ user+file-spreadsheet | R&D | 품번 엑셀 C | lime
 
 ```flow 불일치는 이렇게 생깁니다 — 실습 데이터 uit_change_history에 실제로 남아 있는 기록
 user+pencil-line | R&D | UIT(품목 유형)를 바꿈 | lime
-file-spreadsheet | 구매팀 엑셀 | Line Type은 그대로 | ivory
+file-spreadsheet | 구매팀 엑셀 | Line Type(구매 속성)은 그대로 | ivory
 triangle-alert | ==불일치== | line_type_updated = 'N' | warn
 triangle-alert | 자재 공급 오류 | 잘못된 방식으로 발주·공급 | warn
 ```
@@ -346,7 +346,7 @@ trending-up | 인사이트 | 다음 행동 결정 | hot
 ```
 
 과거에는 개발자·IT 전문가의 영역이었지만, 지금은 모든 산업과 직무에서 **데이터가 핵심 자산**입니다.
-단순한 ’조회’를 넘어 ==데이터에서 의미를 찾고 인사이트를 끌어내야== 진정한 데이터 기반 인재입니다.
+단순한 ‘조회’를 넘어 ==데이터에서 의미를 찾고 인사이트를 끌어내야== 진정한 데이터 기반 인재입니다.
 :::
 
 ## 3. DB의 종류
@@ -396,7 +396,7 @@ si:postgresql | PostgreSQL | 이 수업에서 쓰는 DB | hot#4169E1
 
 ```compare
 file-spreadsheet | 엑셀 || database | 관계형 DB (RDB)
-table | 행·열 구조로 데이터 저장 || key-round | ==PK·FK로 테이블 사이 관계를 관리==
+table | 행·열 구조로 데이터 저장 || key-round | ==키(PK·FK)로 테이블 사이 관계를 관리== (5-2에서 배웁니다)
 file | 파일 단위 관리 || shield-check | **제약조건으로 데이터 무결성 보장**
 users | 대량 데이터·동시 사용에 약함 || users | 여러 사용자가 동시에 써도 일관성 유지
 minus | — || square-terminal | **SQL로 대량 조회·집계·조인**
@@ -427,7 +427,7 @@ unit: %
 
 ### 3-4. PostgreSQL ② 같은 DB 안에서 AI용 벡터 검색까지 — pgvector {keep}
 
-1교시 2-5에서 AX 엔지니어 역량으로 **RAG**(회사 문서·DB를 검색한 뒤 AI가 답하게 하는 방식)를 다뤘습니다. RAG는 문서를 숫자 벡터(임베딩)로 바꿔 저장하고, 질문과 ==가까운 벡터를 찾는== 검색이 필요합니다.
+1-5에서 AX 엔지니어 역량으로 **RAG**(회사 문서·DB를 검색한 뒤 AI가 답하게 하는 방식)를 다뤘습니다. RAG는 문서를 숫자 벡터(임베딩)로 바꿔 저장하고, 질문과 ==가까운 벡터를 찾는== 검색이 필요합니다.
 
 ```flow RAG가 PostgreSQL 안에서 돌아가는 순서
 file-text | 문서 | 매뉴얼·상담 기록 | ivory
@@ -460,7 +460,7 @@ sparkles | AI 답변 | 찾은 문서로 답하기 | plum
 - 별도의 벡터 전용 DB를 두지 않고, ==기존 테이블 데이터와 임베딩을 같은 테이블에 함께 저장==할 수 있습니다. 그래서 저장·조인을 한 트랜잭션 안에서 처리하고, 두 시스템을 맞추는 동기화 작업을 줄일 수 있습니다.
 - 다만 수십억 건 규모의 벡터, 매우 많은 쓰기, 대규모 멀티테넌트 필터링 같은 경우에는 벡터 전용 DB가 여전히 유리하다는 평가도 함께 있습니다.
 
-```sql 임베딩 열이 있는 테이블에서 질문과 가까운 순서로 3건 꺼내기 (<-> = L2 거리)
+```sql 임베딩 열이 있는 테이블에서 질문과 가까운 순서로 3건 꺼내기 (<-> = L2 거리) — 모양만 보는 예시, 실습 DB에는 없는 테이블
 SELECT title
 FROM repair_manual
 ORDER BY embedding <-> '[0.12, -0.80, ...]'
@@ -470,7 +470,7 @@ LIMIT 3;
 ### 3-4. PostgreSQL ③ 이 수업과의 연결
 
 - 지금 배우는 SQL(조회·조인·집계)은 그대로 쓰면서, 같은 DB에 AI용 데이터까지 담을 수 있습니다.
-- 과정 뒤쪽의 AI Agent는 DB 조회를 **도구(Tool)** 로 호출합니다(1교시 1-5 자동화 예시). 관계형 데이터와 벡터 검색을 한 DB에서 다룰 수 있다는 점이 ==PostgreSQL을 쓰는 이유 중 하나==입니다.
+- 과정 뒤쪽의 AI Agent는 DB 조회를 **도구(Tool)** 로 호출합니다(1-5 자동화 예시). 관계형 데이터와 벡터 검색을 한 DB에서 다룰 수 있다는 점이 ==PostgreSQL을 쓰는 이유 중 하나==입니다.
 
 # 개념적 모델링 · ERD
 
@@ -513,7 +513,7 @@ user-plus | 회원가입 | ==내 정보를 회사에 저장== | hot
 
 ### 4-2. 예시 ① 요구사항 분석 {keep}
 
-```rows → 키를 누를 때마다 요구사항이 한 줄씩 나타납니다
+```rows
 - | 목적 | 요구사항 분석
 user-round | 회원 관리 | 회원가입 때 입력한 ID·이름·비밀번호·생년월일·성별을 저장하고, 로그인할 때 저장된 값과 비교
 pen-line | 블로그 관리 | 어떤 회원이 어떤 제목과 내용으로 글을 썼는지 관리
@@ -555,7 +555,7 @@ star | 리뷰 | 산 상품에 평점·후기 | rose
 
 ### 4-2. 예시 ② 요구사항 분석 {keep}
 
-```rows → 키로 한 줄씩
+```rows
 - | 목적 | 요구사항 분석
 users | 고객 관리 | 고객의 이름·성별·출생연도·가입일·거주지역을 관리
 package | 상품 관리 | 상품의 상품명·카테고리·가격·출시일을 관리
@@ -598,7 +598,7 @@ factory | 창원 공장 | 세탁기·냉장고 조립 | plum
 
 ### 4-2. 예시 ③ 요구사항 분석 {keep}
 
-```rows → 키로 한 줄씩
+```rows
 - | 목적 | 요구사항 분석
 package | 부품 관리 | 부품의 품명·단위·품목 유형(UIT)·상태를 관리
 building-2 | 협력사 관리 | 협력사의 협력사명·국가·국내 여부를 관리
@@ -673,14 +673,14 @@ id-card | 회원 | 하나의 집합 | hot
 회원이 가진 공통 특징 중, 우리가 **저장해야 할 특징**은 무엇일까요? 네이버가 회원가입할 때 받는 정보가 바로 그것입니다.
 
 <div class="scene">
-<div class="mock frag" style="--i:0"><div class="mock-title">{{ic:user-plus}} 회원가입</div><div class="mock-fld"><span>아이디</span><b>sue0122</b></div><div class="mock-fld"><span>비밀번호</span><b>••••</b></div><div class="mock-fld"><span>이름</span><b>박수현</b></div><div class="mock-fld"><span>생년월일</span><b>261117</b></div><div class="mock-fld"><span>성별</span><b>여</b></div></div>
+<div class="mock frag" style="--i:0"><div class="mock-title">{{ic:user-plus}} 회원가입</div><div class="mock-fld"><span>아이디</span><b>sue0122</b></div><div class="mock-fld"><span>비밀번호</span><b>••••</b></div><div class="mock-fld"><span>이름</span><b>박수현</b></div><div class="mock-fld"><span>생년월일</span><b>2023-01-22</b></div><div class="mock-fld"><span>성별</span><b>여</b></div></div>
 <div class="scene-arrow frag" style="--i:1">→</div>
 <div class="ent-box frag" style="--i:2;min-width:300px"><b>{{ic:id-card}} 회원 — 속성(Attribute)</b><div class="chips"><span>ID</span><span>비밀번호</span><span>이름</span><span>생년월일</span><span>성별</span></div></div>
 </div>
 
 ### 4-3. 네이버와 창원 공장에 똑같이 적용하기 {keep}
 
-```rows → 키로 한 줄씩
+```rows
 - | 단계 | 익숙한 예: 네이버 | 생산 예: 창원 공장
 message-circle-question | 질문 | ‘나’라는 사용자를 네이버는 어떻게 데이터로 저장할까? | 창고에 쌓인 ‘컴프레서’라는 실물을 공장은 어떻게 데이터로 저장할까?
 id-card | ① 하나의 집합으로 표현 → **개체(Entity)** | ==회원== | ==부품==
@@ -692,7 +692,7 @@ tag | ② 공통 특징 표현 → **속성(Attribute)** | ID, 비밀번호, 이
 **인스턴스** — 개체를 구성하고 있는 속성이 ==값을 가져 실체화된 것==
 
 <div class="tables2">
-<table class="mini"><caption>{{ic:user-round}} 익숙한 예</caption><thead><tr><th>ID</th><th>비밀번호</th><th>이름</th><th>생년월일</th><th>성별</th><th class="lab">← 개체(속성)</th></tr></thead><tbody><tr><td>sue0122</td><td>1234</td><td>박수현</td><td>261117</td><td>여</td><td class="lab">← 인스턴스</td></tr><tr><td>jun0403</td><td>5678</td><td>손준수</td><td>261118</td><td>남</td><td class="lab">← 인스턴스</td></tr></tbody></table>
+<table class="mini"><caption>{{ic:user-round}} 익숙한 예</caption><thead><tr><th>ID</th><th>비밀번호</th><th>이름</th><th>생년월일</th><th>성별</th><th class="lab">← 개체(속성)</th></tr></thead><tbody><tr><td>sue0122</td><td>1234</td><td>박수현</td><td>2023-01-22</td><td>여</td><td class="lab">← 인스턴스</td></tr><tr><td>jin0403</td><td>5678</td><td>남서진</td><td>2023-04-18</td><td>여</td><td class="lab">← 인스턴스</td></tr></tbody></table>
 <table class="mini"><caption>{{ic:package}} 생산 예</caption><thead><tr><th>품번</th><th>품명</th><th>단위</th><th>UIT</th><th class="lab">← 개체(속성)</th></tr></thead><tbody><tr><td>ECP39799101</td><td>컴프레서</td><td>EA</td><td>D</td><td class="lab">← 인스턴스</td></tr><tr><td>MGL96663301</td><td>도어 글라스</td><td>EA</td><td>D</td><td class="lab">← 인스턴스</td></tr></tbody></table>
 </div>
 
@@ -710,10 +710,10 @@ link | ③ 개체 사이 관계 찾기 → **관계** | 회원이 블로그를 *
 
 ### 4-4. 데이터 모델을 이루는 요소 {keep}
 
-```rows → 키로 한 줄씩
+```rows
 - | 요소 | 뜻 | 예 (네이버) | 예 (창원공장)
-id-card | **엔터티(Entity)** | 저장하려는 대상의 집합(명사형). 업무에 필요하고 저장할 가치가 있는 데이터의 집합 | 회원, 상품, 리뷰 | 부품, 협력사, 입고예정
-tag | **속성(Attribute)** | 엔터티가 가진 공통 특징 = 실제로 저장할 데이터 항목 | 이름, 가격 | 품명, 단위, 품목 유형
+id-card | **엔터티(Entity)** | 저장하려는 대상의 집합(명사형). 업무에 필요하고 저장할 가치가 있는 데이터의 집합 | 회원, 블로그, 카페 | 부품, 협력사, 입고예정
+tag | **속성(Attribute)** | 엔터티가 가진 공통 특징 = 실제로 저장할 데이터 항목 | 이름, 글 제목 | 품명, 단위, 품목 유형
 user-round | **인스턴스(Instance)** | 엔터티 안의 개별 데이터. 속성이 값을 가져 실체화된 것 | 회원 집합 속 ‘sue0122’ | 부품 집합 속 ‘컴프레서’
 link~hot | ==관계(Relationship)== ⭐ | 엔터티와 엔터티 사이의 의미 있는 연결 | 회원이 블로그를 **작성한다** | 협력사가 부품을 **공급한다**
 ```
@@ -739,7 +739,7 @@ link | 1개 이상 | 관계
 
 ### 4-4. 속성 — 더 이상 나눌 수 없는 최소 단위 {keep}
 
-가능하면 **의미상 더 이상 나눌 수 없는 최소 단위**로 나눕니다. 하나의 속성에는 하나의 값만 들어갑니다
+가능하면 **의미상 더 이상 나눌 수 없는 최소 단위**로 나눕니다. 하나의 속성에는 하나의 값만 들어갑니다.
 <br>(비밀번호가 1234와 5678 두 개일 수 없음).
 
 ```flow 「이름나이」는 두 속성으로 나눌 수 있으므로 부적절
@@ -810,16 +810,16 @@ network | ERD | 그림으로 표현 | hot
 
 ### 4-5. ERD 그리는 순서 — Chen 표기법과 IE 표기법 {keep}
 
-```rows → 키로 한 단계씩
+```rows
 - | 순서 · 할 일 | Chen 표기법 | IE 표기법 (Crow's Foot)
 id-card | 1 · 엔터티(개체)를 그린다 | **사각형** 안에 엔터티 이름 | **사각형** 맨 위에 엔터티 이름
 tag | 2 · 속성을 그린다 | 선으로 연결한 **타원**, 식별자는 **밑줄** | 사각형 **안에 목록**, 식별자는 `PK`·`*` 등
 link | 3 · 관계를 확인한다 | 두 엔터티 사이 **마름모** 안에 관계 이름 | 마름모 없이 **선**으로 잇고, 선 위에 관계 이름
-hash | 4 · 관계차수를 적는다 | 선 끝에 `1`, `N`, `M` | 선 끝 기호: 1쪽 {{ic:erd-bar}}, N쪽 {{ic:erd-crow}}(까치발)
+hash | 4 · 관계차수를 적는다 | 선 끝에 `1`, `N`, `M` | 선 끝 기호: 1쪽 {{ic:erd-bar}}, N쪽 {{ic:erd-crow}}(까마귀발)
 circle-help | 5 · 참여도를 적는다 | **이중선** = 필수, **단일선** = 선택 | 필수 {{ic:erd-bar}}(최소 1), 선택 {{ic:erd-o}}(최소 0)
 ```
 
-> 7장 실습 데이터 그림은 IE 표기법입니다. ==이 수업은 IE 표기법으로 ERD를 읽습니다.==
+> 7절(7-3·7-4) 실습 데이터 그림은 IE 표기법입니다. ==이 수업은 IE 표기법으로 ERD를 읽습니다.==
 
 ### 4-5. 용어 정의 — 관계차수와 참여도 {keep}
 
@@ -828,7 +828,7 @@ hash | 관계차수 (Cardinality) — 최대 몇 개까지? | 한 엔터티의 �
 circle-help | 참여도 (Optionality) — 꼭 있어야 하나? | 인스턴스들이 관계에 **반드시 참여해야 하는지**(최소 1개), <br>**참여하지 않아도 되는지**(최소 0개) | rose | [기호] 필수 {{ic:erd-bar}}(최소 1) · 선택 {{ic:erd-o}}(최소 0)
 ```
 <p class="lead">한 줄로 기억하기: 관계차수 = 몇 개까지? · 참여도 = 꼭 있어야 하나?<br>
-SQLD에서는 참여도를 <strong>관계선택사양</strong>이라고도 부릅니다. 관계차수는 ==최대==, 참여도는 ==최소==를 말합니다.</p>
+참여도는 <strong>선택성</strong>이라고도 하고, SQLD에서는 <strong>관계선택사양</strong>이라고도 부릅니다. 관계차수는 ==최대==, 참여도는 ==최소==를 말합니다.</p>
 
 ### 4-5. 예시 ① 익숙한 예: 회원–블로그 {keep}
 
@@ -847,7 +847,7 @@ SQLD에서는 참여도를 <strong>관계선택사양</strong>이라고도 부�
 회원 @user-round ; ||--o< 작성 ; 블로그 @pen-line
 ```
 
-```rows → 키로 하나씩
+```rows
 - | 무엇을 | 읽은 내용
 erd-crow | **관계차수** — 블로그 쪽 {{ic:erd-crow}} | `sue0122` 회원 1명이 블로그 글 2개를 썼습니다 → ==회원 1 : 블로그 N==. 반대로 글 하나에 작성자가 여러 명일 수는 없습니다.
 erd-o | **참여도** — 블로그 쪽 {{ic:erd-o}} | `ho0221`처럼 블로그를 하나도 안 쓴 회원도 있을 수 있습니다.
@@ -873,7 +873,7 @@ erd-bar~rose | **참여도** — 회원 쪽 {{ic:erd-bar}} | 블로그 글은 **
 부품 @package ; ||--o< 입고 예정 ; 입고예정 @truck
 ```
 
-```rows → 키로 하나씩
+```rows
 - | 무엇을 | 읽은 내용
 erd-crow | **관계차수** — 입고예정 쪽 {{ic:erd-crow}} | 컴프레서(`ECP39799101`) 하나에 입고예정이 2건 → ==부품 1 : 입고예정 N==. 입고예정 1건이 여러 부품을 동시에 가리키지는 않습니다.
 erd-o | **참여도** — 입고예정 쪽 {{ic:erd-o}} | 정수 필터(`MFT43979901`)처럼 입고예정이 없는 부품도 있습니다. 부품 68개 중 입고예정이 있는 부품은 5개뿐입니다.
@@ -888,7 +888,7 @@ notation-ie | IE (정보공학, Crow's Foot) | 다(Many) 쪽을 **까마귀발**
 notation-barker | Barker | 다(Many) 쪽을 까마귀발로. **실선 구간 = 필수, 점선 구간 = 선택** | ivory | [주로] 오라클 설계 도구 (리처드 바커의 CASE*Method)
 ```
 
-> 사각형·원형·마름모로 그리는 방식은 **Chen**, 관계차수·참여도를 기호로 적는 방식은 **IE**입니다. 이 수업의 그림은 IE 표기법을 씁니다. SQLD에는 주로 IE와 Barker 표기법 ERD를 읽는 문제가 나옵니다.
+> 사각형·타원·마름모로 그리는 방식은 **Chen**, 관계차수·참여도를 기호로 적는 방식은 **IE**입니다. 이 수업의 그림은 IE 표기법을 씁니다. SQLD에는 주로 IE와 Barker 표기법 ERD를 읽는 문제가 나옵니다.
 
 ### 4-5. ERD 표기법 ② IE 표기법의 기호 세 개 {keep}
 
@@ -913,7 +913,7 @@ erd-crow | 까마귀발 | 여러 개 | rose | [뜻] 다(Many)
 
 ### 4-5. ERD 표기법 ④ 선 끝 모양 네 가지 {keep}
 
-```rows 엔터티 B가 오른쪽에 있을 때, B 쪽 끝의 모양 — → 키로 하나씩
+```rows 엔터티 B가 오른쪽에 있을 때, B 쪽 끝의 모양
 - | 의미 | 최소 | 최대 | 선 끝 모양
 - | 0개 또는 1개 | 0 | 1 | {{erd:--o|}}
 - | 정확히 1개 | 1 | 1 | {{erd:--||}}
@@ -935,7 +935,7 @@ erd-crow | 까마귀발 | 여러 개 | rose | [뜻] 다(Many)
 
 ### 4-5. 문제 — 표기를 보고 관계와 선택성 맞추기 {keep}
 
-```rows 먼저 맞혀 보고, → 키로 관계 → 선택성 순서로 하나씩 정답을 엽니다
+```rows 표기를 보고 관계와 선택성을 먼저 맞혀 보세요
 - | 표기 | 관계 | 선택성
 - | {{erd:||--o<}} | ?1 : N | ?선택
 - | {{erd:>|--|<}} | ?N : M | ?필수
@@ -946,6 +946,8 @@ erd-crow | 까마귀발 | 여러 개 | rose | [뜻] 다(Many)
 ```
 
 ### 4-5. ERD 표기법 ⑥ 식별 관계와 비식별 관계 {keep}
+
+> 미리 알아 둘 말: **PK** = 한 행을 구분하는 값(식별자), **FK** = 다른 표에서 빌려 온 값. 5-2에서 자세히 배웁니다.
 
 ```icons IE 표기법에서는 선의 모양으로 관계의 성격도 나타냅니다
 line-solid | 식별 관계 (Identifying) — 실선 | 부모의 주식별자가 자식의 **기본키(PK)에 포함**됨. 부모 없이는 자식이 존재할 수 없는 강한 연결 | plum | [주의] 계층이 깊어질수록 자식의 PK 컬럼이 늘어나 조인·WHERE 조건이 복잡해짐
@@ -964,14 +966,14 @@ line-dashed | 비식별 관계 (Non-Identifying) — 점선 | 부모의 주식�
 
 ### 4-5. ⑥ 세 예시에서 찾아보기 {keep}
 
-```rows → 키로 한 줄씩
+```rows
 - | 예시 | 식별 관계 (실선) | 비식별 관계 (점선)
 user-round | 4-2 예시 ① 네이버 | (해당 없음) | 회원 → 블로그<br>블로그 PK: `게시글번호` / FK: `회원ID`(일반 컬럼)
 shopping-cart | 4-2 예시 ② 쇼핑몰 | (해당 없음) | 고객·상품 → 구매<br>구매 PK: `구매ID` / FK: `고객ID`, `상품ID`
 factory~hot | 4-2 예시 ③ 창원공장 | 부품·협력사 → 구매조건<br>PK: ==품번 + 협력사코드== (둘 다 FK이면서 PK) | 부품·협력사 → 입고예정<br>PK: `입고번호` / FK: `품번`, `협력사코드`
 ```
 
-> 7-4 관계 모델 그림에서 실선과 점선이 바로 이 구분입니다. 실습 데이터의 `part_sourcing`(구매조건)·`inventory`·`site_part_attr`가 식별 관계입니다. 이 표기법을 알아야 데이터 사이의 관계를 읽을 수 있습니다. 정보처리기사와 SQLD에도 자주 나옵니다.
+> 7-4 관계 모델 그림에서 실선과 점선이 바로 이 구분입니다. 실습 데이터의 `part_sourcing`(구매조건)·`inventory`·`site_part_attr`가 식별 관계입니다(실제 `part_sourcing`의 PK는 `part_no + vendor_code + site_code` 세 컬럼입니다). 이 표기법을 알아야 데이터 사이의 관계를 읽을 수 있습니다. 정보처리기사와 SQLD에도 자주 나옵니다.
 
 ### [실습 1-A] 개념적 모델링 — 학생·과정 {keep}
 
@@ -985,8 +987,9 @@ school | 과정 | 과정ID, 과정명, 과정기간, 교육장소 | lime | [조�
 과정 @school [*과정ID, 과정명, 기간, 장소] ; ||--o< 등록 ; 학생 @graduation-cap [*학생ID, 이름, 과정명, 성별, 나이, 연락처]
 ```
 
-- 학생 → 과정: 1 : 1 필수 (학생 한 명은 반드시 과정 하나에 등록)
-- 과정 → 학생: 1 : N 선택 (예: 아직 개강하지 않은 과정은 학생이 없을 수 있음)
+- 관계 유형: 과정 1 : 학생 N
+- 학생 1명 기준 → 과정은 정확히 1개, 필수 (학생 한 명은 반드시 과정 하나에 등록)
+- 과정 1개 기준 → 학생은 0명 이상, 선택 (예: 아직 개강하지 않은 과정은 학생이 없을 수 있음)
 :::
 
 ### [실습 1-B] 개념적 모델링 — 생산라인·생산계획 {keep}
@@ -1001,29 +1004,30 @@ factory | 생산라인 | 라인코드, 라인명, 사이트, 생산 제품 | lim
 생산라인 @factory [*라인코드, 라인명, 사이트, 생산 제품] ; ||--o< 배정 ; 생산계획 @calendar [*계획ID, 계획일자, 모델 품번, 계획수량, 근무조]
 ```
 
-- 생산계획 → 생산라인: 1 : 1 필수 (계획 하나는 반드시 라인 하나에 배정)
-- 생산라인 → 생산계획: 1 : N 선택 (예: 정비 중인 라인은 계획이 없을 수 있음)
+- 관계 유형: 생산라인 1 : 생산계획 N
+- 생산계획 1건 기준 → 생산라인은 정확히 1개, 필수 (계획 하나는 반드시 라인 하나에 배정)
+- 생산라인 1개 기준 → 생산계획은 0건 이상, 선택 (예: 정비 중인 라인은 계획이 없을 수 있음)
 :::
 
 ### 4-6. ERD 읽는 법 — 관계명 · 관계차수 · 선택성 ⭐ {keep}
 
 선 하나에서 ==세 가지==를 읽습니다.
 
-```rows → 키로 하나씩
+```rows
 - | 읽을 것 | 뜻 | 표기
 tag | **관계명** | 무슨 관계인지 동사형으로 적은 것 | 구매하다, 작성되다
-erd-crow | **관계차수 (Cardinality)** | 몇 대 몇으로 연결되는가 (1:1, 1:N, N:M). 프로젝트에서는 1:N이 가장 많음 | 까치발 {{ic:erd-crow}} = 여러 개, 막대 {{ic:erd-bar}} = 1개
+erd-crow | **관계차수 (Cardinality)** | 몇 대 몇으로 연결되는가 (1:1, 1:N, N:M). 프로젝트에서는 1:N이 가장 많음 | 까마귀발 {{ic:erd-crow}} = 여러 개, 막대 {{ic:erd-bar}} = 1개
 erd-o | **선택성 (Optionality)** | 반드시 있어야 하는가 | 막대 {{ic:erd-bar}} = 필수(1개), 원 {{ic:erd-o}} = 선택(0개 가능)
 ```
 
 ### 4-6. 읽는 방향 — 내 쪽 하나를 기준으로, 상대편 끝을 읽는다 {keep}
 
 ```erd
-회원 @user-round ; |--o< 구매하다 ; 상품 @package
-상품 @package ; |--o< 작성되다 ; 리뷰 @star
+회원 @user-round ; >o--o< 구매하다 ; 상품 @package
+상품 @package ; ||--o< 작성되다 ; 리뷰 @star
 ```
 
-```rows → 키로 하나씩
+```rows
 - | 기준 | 상대편 끝 | 이렇게 읽습니다
 user-round | 회원 1명 | 상품 쪽 {{ic:erd-o}} + {{ic:erd-crow}} | “회원 한 명은 상품을 ==0개 이상== 구매할 수 있다” (하나만 살 수도, 아예 안 살 수도)
 package | 상품 1개 | 리뷰 쪽 {{ic:erd-o}} + {{ic:erd-crow}} | “한 상품에는 리뷰가 **여러 개 작성되거나 없을 수** 있다”
@@ -1048,12 +1052,12 @@ layout-panel-top | 관계 모델 | DBMS용 설계도 | hot
 
 ### 5-1. 논리적 모델링 그리는 순서 (dbdiagram.io 활용) {keep}
 
-```rows → 키로 한 단계씩
+```rows
 - | 순서 | 할 일 | 설명
 list | 1 | 엔터티·속성 | 필요한 엔터티와 속성을 먼저 나열
 key-round | 2 | 식별자 | 각 엔터티를 구분할 식별자를 정한다
-link | 3 | 관계 설정 | 엔터티 간 관계를 설정한다
-scissors | 4 | 정규화 | 중복과 이상 현상이 없도록 정규화를 고려
+scissors | 3 | 정규화 | 중복과 이상 현상이 없도록 정규화를 고려
+link | 4 | 관계 설정 | 엔터티 간 관계를 설정한다
 target | 5 | 목적 고려 | 운영/분석 목적에 따라 구조를 다르게 설계할 수 있다
 ```
 
@@ -1085,12 +1089,12 @@ key-round | 중복 없는 식별자 | 인조식별자 | lime
 
 식별자를 실제 테이블에 적용하면 **키(Key)** 라고 부릅니다. ERD에서도 `PK`, `FK`로 표시하는 경우가 많습니다. 식별 관계·비식별 관계를 이해하려면 꼭 알아야 합니다.
 
-```rows → 키로 한 줄씩
+```rows
 - | 용어 | 뜻 | 예 (네이버) | 예 (창원공장)
 key-round~hot | **PK** (Primary Key, 기본키) = 주식별자 | 한 행을 **유일하게 구분**. **중복 X, NULL X**. 테이블마다 **하나만** | 회원의 `회원ID`<br>블로그의 `게시글번호` | 부품의 `품번`<br>협력사의 `협력사코드`
 link~rose | **FK** (Foreign Key, 외래키) = 외부식별자 | 다른 테이블의 PK를 **빌려 와서** 두 테이블을 잇는 컬럼. 상대 PK에 실제로 있는 값이어야 함(참조 무결성) | 블로그의 `회원ID` → 회원의 `회원ID` | 입고예정의 `품번` → 부품의 `품번`
 key-square | **복합키** = 복합식별자 | **두 개 이상의 컬럼을 묶어서** 만든 PK | (해당 없음) | 구매조건의 `품번 + 협력사코드`
-hash | **인조식별자** | 업무에서 생긴 값이 아니라 구분하려고 **일부러 만든** 식별자 | 블로그의 `게시글번호` | (해당 없음)
+hash | **인조식별자** | 업무에서 생긴 값이 아니라 구분하려고 **일부러 만든** 식별자 | 블로그의 `게시글번호` | 입고예정의 `입고번호`
 ```
 
 ### 5-2. 부모와 자식 — FK가 어디에 들어가나요? {keep}
@@ -1139,17 +1143,16 @@ ban | 활용이 어려워짐 | | warn
 ### 5-3. 예시 A ① 한 표에 모두 넣으면 {keep}
 
 :::window 논리적 모델링
-<p class="norm-h">2. 정규화 진행</p>
+<p class="norm-h">정규화 진행</p>
 <table class="mini"><thead><tr><th>회원ID</th><th>PW</th><th>이름</th><th>성별</th><th>나이</th><th>연락처</th><th>주소</th></tr></thead><tbody><tr><td>sue0122</td><td>1234</td><td>박수현</td><td>여</td><td>24</td><td>02-123-4567</td><td>영등포구</td></tr><tr><td class="dup">sue0122</td><td class="dup">1234</td><td class="dup">박수현</td><td class="dup">여</td><td class="dup">24</td><td>02-123-4567</td><td>마포구</td></tr><tr><td class="dup">sue0122</td><td class="dup">1234</td><td class="dup">박수현</td><td class="dup">여</td><td class="dup">24</td><td>010-1111-1111</td><td>영등포구</td></tr><tr><td class="dup">sue0122</td><td class="dup">1234</td><td class="dup">박수현</td><td class="dup">여</td><td class="dup">24</td><td>010-1111-1111</td><td>마포구</td></tr></tbody></table>
 :::
 
-분홍 칸 = 같은 회원 정보가 ==반복 저장된 곳==
-수정하려다가 1~2개만 수정되어 이상 현상 발생 가능
+분홍 칸은 같은 회원 정보가 ==반복 저장된 곳==입니다. 네 줄 중 한두 줄만 수정되면 수정 이상이 생깁니다.
 
 ### 5-3. 예시 A ② 회원 정보와 연락처·주소를 떼어 보면 {keep}
 
 :::window 논리적 모델링
-<p class="norm-h">2. 정규화 진행</p>
+<p class="norm-h">정규화 진행</p>
 <div class="norm-two"><table class="mini"><thead><tr><th>회원ID</th><th>PW</th><th>이름</th><th>성별</th><th>나이</th></tr></thead><tbody><tr><td>sue0122</td><td>1234</td><td>박수현</td><td>여</td><td>24</td></tr><tr><td class="dup">sue0122</td><td class="dup">1234</td><td class="dup">박수현</td><td class="dup">여</td><td class="dup">24</td></tr><tr><td class="dup">sue0122</td><td class="dup">1234</td><td class="dup">박수현</td><td class="dup">여</td><td class="dup">24</td></tr><tr><td class="dup">sue0122</td><td class="dup">1234</td><td class="dup">박수현</td><td class="dup">여</td><td class="dup">24</td></tr></tbody></table>
 <table class="mini"><thead><tr><th>연락처</th><th>주소</th></tr></thead><tbody><tr><td>02-123-4567</td><td>영등포구</td></tr><tr><td>02-123-4567</td><td>마포구</td></tr><tr><td>010-1111-1111</td><td>영등포구</td></tr><tr><td>010-1111-1111</td><td>마포구</td></tr></tbody></table></div>
 :::
@@ -1157,12 +1160,12 @@ ban | 활용이 어려워짐 | | warn
 ### 5-3. 예시 A ③ 반복된 줄을 지우면 {keep}
 
 :::window 논리적 모델링
-<p class="norm-h">2. 정규화 진행</p>
+<p class="norm-h">정규화 진행</p>
 <div class="norm-two"><table class="mini"><thead><tr><th>회원ID</th><th>PW</th><th>이름</th><th>성별</th><th>나이</th></tr></thead><tbody><tr class="new"><td>sue0122</td><td>1234</td><td>박수현</td><td>여</td><td>24</td></tr></tbody></table>
-<table class="mini"><thead><tr><th>연락처</th><th>주소</th></tr></thead><tbody><tr><td>02-123-4567</td><td>영등포구</td></tr><tr><td>010-1111-1111</td><td>마포구</td></tr></tbody></table></div>
+<table class="mini"><thead><tr><th>연락처</th><th>주소</th></tr></thead><tbody><tr><td>02-123-4567</td><td>영등포구</td></tr><tr><td>02-123-4567</td><td>마포구</td></tr><tr><td>010-1111-1111</td><td>영등포구</td></tr><tr><td>010-1111-1111</td><td>마포구</td></tr></tbody></table></div>
 :::
 
-회원 정보는 ==한 줄만== 남았습니다. 그런데 연락처와 주소는 서로 관계가 없는데 한 줄에 묶여 있습니다.
+회원 정보는 ==한 줄만== 남았습니다. 그런데 연락처와 주소는 서로 관계가 없는데 한 줄에 묶여 있어 4줄이 그대로입니다. 한 번 더 나눕니다.
 
 ### 5-3. 예시 A ④ 정규화 완료 — 세 엔터티로 {keep}
 
@@ -1172,7 +1175,7 @@ ban | 활용이 어려워짐 | | warn
 <div class="norm-two"><div class="norm-ent frag" style="--i:1"><b>회원 연락처</b><table class="mini"><thead><tr><th>연락처</th></tr></thead><tbody><tr><td>02-123-4567</td></tr><tr><td>010-1111-1111</td></tr></tbody></table></div><div class="norm-ent frag" style="--i:2"><b>회원 주소</b><table class="mini"><thead><tr><th>주소</th></tr></thead><tbody><tr><td>영등포구</td></tr><tr><td>마포구</td></tr></tbody></table></div></div></div>
 :::
 
-정규화하면 ==회원 / 회원 연락처 / 회원 주소== 세 엔터티로 나뉩니다. (→ 키로 하나씩)
+정규화하면 ==회원 / 회원 연락처 / 회원 주소== 세 엔터티로 나뉩니다.
 
 
 ### 5-4. 관계 설정(Foreign Key) {keep}
@@ -1203,7 +1206,7 @@ A. 어떤 연락처인지 구분할 방법이 없어 어렵습니다. 그래서 
 **1:N 관계** → ==N(다) 쪽 엔터티에 1쪽의 식별자를 빌려줘서== 연결합니다(FK).
 
 ```erd
-PRODUCT @package [*PRODUCT_ID, PRODUCT_NAME, PRICE] ; ||--o< 가진다 ; PRODUCT_IMAGE @image [*PRODUCT_IMAGE_ID, PRODUCT_ID (FK), IMAGE_URL]
+PRODUCT @package [*PRODUCT_ID, PRODUCT_NAME, PRICE] ; ||..o< 가진다 ; PRODUCT_IMAGE @image [*PRODUCT_IMAGE_ID, PRODUCT_ID (FK), IMAGE_URL]
 ```
 
 ### 5-4. 규칙 ① 데이터로 확인하기 — PRODUCT_ID가 2인 상품의 이미지는? {keep}
@@ -1222,7 +1225,7 @@ PRODUCT @package [*PRODUCT_ID, PRODUCT_NAME, PRICE] ; ||--o< 가진다 ; PRODUCT
 
 ```erd 위: 회원 N : M 상품 → 아래: 회원 1 : N 구매 N : 1 상품 (구매가 회원ID, 상품ID를 모두 가짐)
 회원 @user-round ; >o--o< 구매한다 ; 상품 @package
-회원 @user-round [*회원ID] ; ||--o< ; 구매 @shopping-cart [*구매ID, 회원ID (FK), 상품ID (FK)] ; >o--|| ; 상품 @package [*상품ID]
+회원 @user-round [*회원ID] ; ||..o< ; 구매 @shopping-cart [*구매ID, 회원ID (FK), 상품ID (FK)] ; >o..|| ; 상품 @package [*상품ID]
 ```
 
 > {{ic:lightbulb}} **ERD를 읽는 요령: ==FK가 있는 쪽이 N(여러 개)쪽==입니다.**
@@ -1232,7 +1235,7 @@ PRODUCT @package [*PRODUCT_ID, PRODUCT_NAME, PRICE] ; ||--o< 가진다 ; PRODUCT
 ```erd 회원의 식별자(회원ID)를 연락처·주소·블로그가 빌려 갑니다
 회원 @user-round [*회원ID, PW, 이름, 성별, 나이] ; ||--o< ; 회원 연락처 [회원ID (FK), 구분코드, 연락처]
 회원 ; ||--o< ; 회원 주소 [회원ID (FK), 구분코드, 주소]
-회원 ; ||--o< ; 블로그 [*게시글번호, 회원ID (FK), 글 제목, 글 내용]
+회원 ; ||..o< ; 블로그 [*게시글번호, 회원ID (FK), 글 제목, 글 내용]
 ```
 
 > 논리적 모델은 설계할 때만 쓰는 것이 아닙니다. 개발·유지보수할 때도 이 설계도를 보고 데이터를 어떻게 다룰지 결정합니다. 그래서 ==설계도에서 데이터 간 관계를 읽을 줄 알아야== 합니다.
@@ -1260,9 +1263,12 @@ user-cog | 직원 | 직원ID, 이름, 성별, 나이, 연락처, 주소, 부서I
 building-2 | 부서 | 부서ID, 부서명, 근무지 | lime | [조건] 직원이 **없을 수도**, **여러 명**일 수도 있음
 ```
 
+1. 위 조건을 5-6의 프롬프트에 붙여 AI에게 ERD·관계 모델을 그리게 합니다.
+2. 결과가 조건과 맞는지 선 끝 기호와 FK를 직접 읽어 검토합니다.
+
 :::answer
 ```erd
-직원 @user-cog [*직원ID, 이름, 성별, 나이, 부서ID (FK)] ; >o--|| 소속 ; 부서 @building-2 [*부서ID, 부서명, 근무지]
+직원 @user-cog [*직원ID, 이름, 성별, 나이, 부서ID (FK)] ; >o..|| 소속 ; 부서 @building-2 [*부서ID, 부서명, 근무지]
 직원 ; ||--o< ; 직원 연락처 [직원ID (FK), 구분코드, 연락처]
 직원 ; ||--o< ; 직원 주소 [직원ID (FK), 구분코드, 주소]
 ```
@@ -1295,7 +1301,7 @@ waypoints | 접근 경로 | 어떤 길로 읽을지 | lime
 
 ### 6-2. 용어 정리 — 단계마다 부르는 이름 {keep}
 
-```rows → 키로 한 줄씩. 같은 것을 단계마다 다르게 부릅니다
+```rows 같은 것을 단계마다 다르게 부릅니다
 - | 개념적 모델링 | 논리적 모델링 | 물리적 모델링(실제 DB)
 id-card | 개체(Entity) | 릴레이션(Relation) | ==테이블(Table)==
 tag | 속성(Attribute) | 속성(Attribute) | ==열(Column)==
@@ -1328,7 +1334,7 @@ book-open | 7 | 코드표
 
 ### 7-2. 테이블 한눈에 보기 {keep}
 
-```rows → 키로 한 그룹씩
+```rows
 - | 그룹 | 테이블 | 한 줄 설명
 database | 마스터 | `part_master`, `vendor` | 품목, 협력사
 book-open | 코드표 | `code_uit`, `code_uom`, `code_status`, `code_supply_type`, `code_line_type`, `code_svc`, `code_cosp` | 코드 → 의미(영/한)
@@ -1340,7 +1346,7 @@ history | 이력 | `uit_change_history`, `part_status_history` | UIT 변경 이�
 ### 7-2. 실습 데이터 구조 ① part_master를 가운데 두고 {keep}
 
 ```erd part_master에서 뻗어 나가는 테이블 — 선 위 글자가 FK 컬럼, 실선 = 식별 관계 · 점선 = 비식별 관계
-part_master (품목) @package [*part_no (품번), description_kr (한글 품명), uit (품목 유형) (FK), status_code (상태) (FK)] ; ||..o< parent·child ; bom_structure (BOM) @list-tree [*bom_id (BOM 행 번호), parent_part_no (부모 품번) (FK), child_part_no (자식 품번) (FK), qty_per (부모 1개당 소요량)]
+part_master (품목) @package [*part_no (품번), description_kr (한글 품명), uit (품목 유형) (FK), status_code (상태) (FK)] ; ||..o< model·parent·child ; bom_structure (BOM) @list-tree [*bom_id (BOM 행 번호), model_part_no (모델 품번) (FK), parent_part_no (부모 품번) (FK), child_part_no (자식 품번) (FK), qty_per (부모 1개당 소요량)]
 part_master (품목) @package ; ||--o< part_no ; part_sourcing (소싱) @wallet [*part_no (품번) (FK), *vendor_code (업체 코드) (FK), *site_code (사이트 코드), po_price (구매 단가)]
 part_master (품목) @package ; ||--o< part_no ; site_part_attr (사이트 속성) @factory [*site_code (사이트 코드), *part_no (품번) (FK), site_name (사이트 이름)]
 part_master (품목) @package ; ||..o< part_no ; uit_change_history (UIT 이력) @history [*change_id (변경 번호), part_no (품번) (FK), old_uit (바뀌기 전 UIT), new_uit (바뀐 뒤 UIT)]
@@ -1360,7 +1366,7 @@ code_supply_type (공급 방식 코드표) @truck [*supply_type (공급 방식),
 
 ### 7-3. 개념 ERD — 무엇과 무엇이 이어져 있나? {keep}
 
-4장에서 배운 **개념적 모델링** 수준의 그림입니다. 테이블(개체)과 관계만 보여 주고, 코드표 7개는 그림을 단순하게 하려고 뺐습니다(7-4 관계 모델에는 모두 있습니다).
+4절에서 배운 **개념적 모델링** 수준의 그림입니다. 테이블(개체)과 관계만 보여 주고, 코드표 7개는 그림을 단순하게 하려고 뺐습니다(7-4 관계 모델에는 모두 있습니다).
 
 ```mermaid 실습 데이터 개념 ERD
 erDiagram
@@ -1387,7 +1393,7 @@ warehouse | 재고 | right
 truck | 입고예정 | right
 ```
 
-```rows → 키로 하나씩
+```rows
 - | 읽을 곳 | 뜻
 package~hot | 한가운데 `PART_MASTER` | BOM·소싱·재고·생산계획·입고예정·이력이 모두 ==품번==(`part_no`)으로 이어집니다
 erd-crow | 선 끝 기호 | {{erd:--||}} 반드시 하나 · {{erd:--o<}} 0개 이상 · {{erd:--|<}} 1개 이상 (4-5 ERD 표기법과 같은 뜻)
@@ -1397,7 +1403,7 @@ triangle-alert~warn | 빠진 선 | `scheduled_receipt.vendor_code`는 협력사 
 
 ### 7-4. 관계 모델 — 어떤 컬럼으로 이어져 있나? {keep}
 
-5장 **논리적 모델링**의 결과에 해당하는 그림입니다. ==실선 = 식별 관계==(`part_sourcing`, `site_part_attr`, `inventory`), ==점선 = 비식별 관계==입니다. 코드표 7개는 PK 컬럼만, 나머지 10개 테이블은 모든 컬럼을 표시했습니다. 선 위의 글자는 FK 컬럼 이름입니다.
+5절 **논리적 모델링**의 결과에 해당하는 그림입니다. ==실선 = 식별 관계==(`part_sourcing`, `site_part_attr`, `inventory`), ==점선 = 비식별 관계==입니다. 코드표 7개는 PK 컬럼만, 나머지 10개 테이블은 모든 컬럼을 표시했습니다. 선 위의 글자는 FK 컬럼 이름입니다.
 
 ```mermaid 실습 데이터 관계 모델 (테이블 17개)
 erDiagram
@@ -1568,9 +1574,9 @@ triangle-alert~warn | `bom_structure` | `uom` | `code_uom`
 ### 7-5. 실습 데이터로 ERD 읽어 보기 {keep}
 
 ```icons
-git-merge | `part_sourcing` = 중간 테이블 | `vendor`와 `part_master` 사이의 N:M을 풀어 놓은 모양. PK가 `part_no + vendor_code + site_code`. 4-2 쇼핑몰의 `구매`와 같은 구조 | lime
+git-merge | `part_sourcing` = 중간 테이블 | `vendor`와 `part_master` 사이의 N:M을 풀어 놓은 모양. PK가 `part_no + vendor_code + site_code`. 4-2 예시 ③의 `구매 조건`과 같은 구조(여기에 `site_code`가 PK에 하나 더 붙음) | lime
 repeat | `bom_structure`는 세 번 참조 | `part_master`를 모델·부모·자식으로 세 번 참조. “무엇이 무엇의 부품인가”를 표현하는 Day 3 BOM 전개의 핵심 | rose
-circle-alert | `part_status_history`엔 PK가 없다 | 6-2의 「식별자는 중복 X, 비어 있으면 X」 기준으로 보면 어떤 문제가 생길 수 있을까요? | warn
+circle-alert | `part_status_history`엔 PK가 없다 | 5-2의 「식별자는 중복 X, 비어 있으면 X」 기준으로 보면 어떤 문제가 생길 수 있을까요? | warn
 ```
 
 ### 7-5. 직접 해 보기 — 그림만 보고 답해 보세요 {keep}

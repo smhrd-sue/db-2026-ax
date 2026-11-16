@@ -1,6 +1,6 @@
 ---
 label: 8. DML
-title: 데이터를 삽입·수정·삭제 
+title: 데이터를 삽입·수정·삭제
 ---
 
 # INSERT · UPDATE · DELETE
@@ -72,7 +72,7 @@ UNION ALL SELECT 't_scheduled_receipt', COUNT(*) FROM t_scheduled_receipt;
 
 ### 0-3. 처음 상태로 되돌리기 {keep}
 
-실습 중 데이터가 꼬이면 아래처럼 사본을 지우고 다시 만들면 처음 상태로 돌아갑니다.
+실습 중 데이터가 꼬이면 아래처럼 사본을 지우고 다시 만들면 처음 상태로 돌아갑니다. 다시 만든 뒤에는 2장부터 순서대로 다시 실행해야 뒤의 결과가 교재와 같아집니다.
 
 ```sql
 DROP TABLE IF EXISTS t_part_sourcing, t_inventory, t_scheduled_receipt;
@@ -101,7 +101,7 @@ pencil | UPDATE | 이미 있는 행의 값을 바꿈 — 단위: 컬럼 값 (3�
 trash-2 | DELETE | 행을 지움 — 단위: 행 (4장) | hot
 ```
 
-Day 1~3의 `SELECT`는 데이터를 **읽기만** 했습니다. DML은 데이터를 **바꿉니다.** 운영안 Day 4의 「판단 결과를 DB에 기록」하는 일이 바로 DML입니다.
+Day 1~3의 `SELECT`는 데이터를 **읽기만** 했습니다. DML은 데이터를 **바꿉니다.** Day 4의 「판단 결과를 DB에 기록」하는 일이 바로 DML입니다.
 
 ### 1-2. 결과 메시지 읽기 {keep}
 
@@ -332,6 +332,8 @@ DELETE 1
 
 > 「잘못된 값을 DB가 막아 주느냐」는 **테이블을 만들 때 정한 규칙(제약조건)** 에 달려 있습니다. DML은 규칙이 허락하는 것은 무엇이든 넣습니다. 규칙을 만드는 방법은 DDL 단원에서 배웁니다.
 
+> 이 DELETE를 건너뛰면 뒤(3-3, 4-3)의 행 수가 달라집니다. `DELETE 1`을 꼭 확인하세요.
+
 :::teacher 강사 확인
 - 원본에서는 실제로 막히는지 강사 시연으로만 보여 주세요. 아래는 오류로 끝나므로 원본이 바뀌지 않습니다.
 
@@ -350,7 +352,7 @@ DETAIL:  Key (receipt_id)=(1) already exists.
 
 ### 2-7. 확인 문제 — HR 데이터 {keep}
 
-> **준비(한 번만):** HR 원본을 지키기 위해 사본을 만듭니다.
+> **준비(한 번만):** HR 원본을 지키기 위해 사본을 만듭니다. 다시 만들어야 할 때는 먼저 `DROP TABLE IF EXISTS t_dept, t_emp;`를 실행합니다.
 
 ```sql
 SET search_path TO hr;
@@ -359,7 +361,7 @@ CREATE TABLE t_emp  AS SELECT * FROM employees;     -- SELECT 107
 ```
 
 :::try
-**[복습]** (기존 `10. DML.pptx` 7번) `t_dept`에 아래 5개 부서를 **한 문장으로** 넣으세요. 빈 값은 NULL입니다. 넣은 뒤 부서 ID 5 이하를 조회합니다.
+**[복습]** `t_dept`에 아래 5개 부서를 **한 문장으로** 넣으세요. 빈 값은 NULL입니다. 넣은 뒤 부서 ID 5 이하를 조회합니다.
 
 | department_id | department_name | manager_id | location_id |
 | --- | --- | --- | --- |
@@ -369,7 +371,7 @@ CREATE TABLE t_emp  AS SELECT * FROM employees;     -- SELECT 107
 | 4 | 홍보팀 | | |
 | 5 | 외부강사 | | |
 
-**[응용]** (기존 `10. DML.pptx` 8번) `t_emp`에 본인 정보를 넣으세요.
+**[응용]** `t_emp`에 본인 정보를 넣으세요.
 
 - 사번 207, 이름·성·이메일은 본인 정보(예: `Gildong`, `Hong`, `GHONG`)
 - 입사일은 **오늘 날짜**(`CURRENT_DATE`), 직무 ID는 `IT_PROG`, 부서는 [복습]에서 넣은 부서 중 하나
@@ -419,8 +421,10 @@ SELECT * FROM t_emp WHERE employee_id = 207;
 | 207 | Gildong | Hong | GHONG | NULL | 2026-11-05 | IT_PROG | NULL | NULL | NULL | 1 |
 ```
 
-`hire_date`는 **실행한 날짜**가 들어갑니다(검증일 2026-11-05). `CURRENT_DATE`는 기존 교안의 `SYSDATE`와 같은 역할을 하는 「오늘 날짜」입니다.
+`hire_date`에는 **실행한 날짜**가 들어갑니다. 위 결과의 날짜는 예시이며, 여러분 화면에는 오늘 날짜가 나옵니다. `CURRENT_DATE`는 「오늘 날짜」입니다.
 :::
+
+> 확인 문제를 마치면 `SET search_path TO bom;`으로 돌아옵니다.
 
 ## 3. UPDATE — 이미 있는 값 바꾸기
 
@@ -491,7 +495,7 @@ RETURNING receipt_id, part_no, eta_date, qty, receipt_type;
 
 ### 3-3. 계산식과 RETURNING 읽기 {keep}
 
-- `qty = qty + 200` — 오른쪽 `qty`는 **바꾸기 전의 값(400)** 입니다. 기존 실습문제 2번(`MONEY = MONEY + 10000`)과 같은 모양입니다.
+- `qty = qty + 200` — 오른쪽 `qty`는 **바꾸기 전의 값(400)** 입니다.
 - **`RETURNING 컬럼, …`** — 바뀐 행을 **바로 보여 줍니다.** 3-2처럼 UPDATE 후 SELECT를 따로 하지 않아도 됩니다. INSERT·DELETE에도 쓸 수 있습니다(4장).
 
 > 화면에서 본 값으로 계산해 `SET qty = 600`이라고 쓰지 말고, `qty = qty + 200`처럼 **SQL 안에서 계산**하세요. 여러 사람이 동시에 같은 행을 고칠 때 왜 이 방법이 안전한지는 다음 교시(TCL 5장)에서 확인합니다.
@@ -638,7 +642,7 @@ RETURNING site_code, part_no, on_hand_qty;
 | CW | EBA56264701 | 7970.00 |
 ```
 
-5,970 + 2,000 = **7,970**. 입고가 끝났으니 6번 입고 예정은 지워야 합니다(4-2). 기존 실습문제 4번(구매 시 회원 금액 차감 + 상품 품절 처리)처럼 **한 업무가 두 테이블을 바꾸는** 경우입니다.
+5,970 + 2,000 = **7,970**. 입고가 끝났으니 6번 입고 예정은 지워야 합니다(4-2). 이렇게 **한 업무가 두 테이블을 바꾸는** 경우입니다.
 
 :::teacher 강사 확인
 - 「재고 UPDATE는 성공했는데 입고 예정 DELETE를 잊거나 실패하면?」 → 같은 2,000개가 **재고에도 있고 입고 예정에도 남아** Day 3 결품 계산에서 두 번 더해집니다. 이 질문을 던져 두고 다음 교시(TCL)의 「두 문장을 한 묶음으로」로 연결하세요. TCL 단원 1-2의 「UIT 정정 + 이력」과 같은 구조입니다.
@@ -646,10 +650,10 @@ RETURNING site_code, part_no, on_hand_qty;
 
 ### 3-6. 확인 문제 — HR 데이터 {keep}
 
-> 실행 전: `SET search_path TO hr;` (2-7에서 만든 `t_dept`, `t_emp` 사용)
+> 실행 전: `SET search_path TO hr;` (2-7에서 만든 `t_dept`, `t_emp` 사용) 2-7 [응용]의 사번 207이 없으면 2-7 답의 INSERT를 먼저 실행하세요.
 
 :::try
-**[복습]** (기존 `10. DML.pptx` 10번) 2-7에서 넣은 본인 정보(사번 207)를 바꾸세요. 전화번호는 `'010-1234-5678'`, 급여는 20000, 매니저 ID는 200입니다. `RETURNING`으로 바뀐 값을 바로 확인합니다.
+**[복습]** 2-7에서 넣은 본인 정보(사번 207)를 바꾸세요. 전화번호는 `'010-1234-5678'`, 급여는 20000, 매니저 ID는 200입니다. `RETURNING`으로 바뀐 값을 바로 확인합니다.
 
 **[응용]** `t_emp`에서 IT 부서(`department_id` = 60) 직원의 급여를 10% 올리세요. 실행 전·후의 부서 급여 합계를 구하고, **원본** `employees`의 합계도 함께 확인하세요.
 :::
@@ -707,6 +711,8 @@ SELECT SUM(salary) AS it_total FROM employees WHERE department_id = 60;
 
 `UPDATE 5` — IT 부서 5명이 모두 바뀌었습니다. 사본(`t_emp`)만 바뀌고 원본(`employees`)은 그대로입니다.
 :::
+
+> 확인 문제를 마치면 `SET search_path TO bom;`으로 돌아옵니다.
 
 ## 4. DELETE — 행 지우기
 
@@ -799,8 +805,8 @@ SELECT receipt_id, part_no, eta_date, qty, po_no, receipt_type
 | 10 | EIC93178801 | 2026-12-17 | 3000.00 | PO26-1109 | Planned |
 ```
 
-- 7번(신규 600, 12/3)과 1번(12/8 → 12/5)이 앞당겨졌고, 6번(입고 완료)과 8번(PO 없음)이 사라졌습니다.
-- 컴프레서는 이제 12/3 600개 + 12/5 800개가 들어옵니다. 이 변경으로 12/4 결품이 해결되는지는 Day 3 Q11 쿼리를 **사본 기준으로** 다시 돌려 보면 알 수 있습니다(5장 도전).
+- 7번(12/3, 600개)·9번·10번이 새로 들어왔고, 1번은 12/8 → 12/5로 앞당겨졌으며, 6번(입고 완료)과 8번(PO 없음)이 사라졌습니다.
+- 컴프레서는 이제 12/3 600개 + 12/5 800개가 들어옵니다. 이 변경으로 12/4 결품이 해결되는지는 Day 3의 컴프레서 결품일 쿼리(Q11)를 **사본 기준으로** 다시 돌려 보면 알 수 있습니다.
 
 ### 4-4. WHERE 없는 DELETE {keep}
 
@@ -817,7 +823,7 @@ SELECT COUNT(*) FROM t_part_sourcing;
 | 0 |
 ```
 
-기존 실습문제 8번(`DELETE FROM TB_DEAL;`)처럼 「모든 행을 지워라」가 정말 의도라면 맞는 문장입니다. 의도가 아니었다면 3-4와 같은 사고입니다.
+「모든 행을 지워라」가 정말 의도라면 맞는 문장입니다. 의도가 아니었다면 3-4와 같은 사고입니다.
 :::
 
 ### 4-4. INSERT … SELECT로 복구 {keep}
@@ -853,10 +859,10 @@ SELECT 컬럼, …                ← VALUES 대신 SELECT
 
 ### 4-5. 확인 문제 — HR 데이터 {keep}
 
-> 실행 전: `SET search_path TO hr;`
+> 실행 전: `SET search_path TO hr;` (2-7에서 넣은 부서 1~5와 사번 207이 있어야 합니다.)
 
 :::try
-**[복습]** 2-7에서 `t_dept`에 넣은 부서 1~5를 **한 문장으로** 지우세요. 지운 뒤 `t_dept`의 행 수와, 부서 1에 소속된 사번 207 직원의 행을 조회하세요. 직원이 소속된 부서가 지워졌는데 직원 행은 어떻게 되었나요?
+**[복습]** 2-7에서 `t_dept`에 넣은 부서 1~5를 **한 문장으로** 지우세요. 지운 뒤 `t_dept`의 행 수와, 2-7에서 넣은 사번 207 직원의 행을 조회하세요. 직원이 소속된 부서가 지워졌는데 직원 행은 어떻게 되었나요?
 
 **[응용]** `t_emp`에서 **부서가 없는(NULL) 직원**을 지우려고 합니다. 아래 두 문장의 결과를 비교하고, 어느 쪽이 맞는지 설명하세요. 맞는 쪽에는 `RETURNING`으로 지운 직원의 사번·이름·성을 확인합니다.
 
@@ -891,7 +897,7 @@ SELECT employee_id, first_name, department_id FROM t_emp WHERE employee_id = 207
 | 207 | Gildong | 1 |
 ```
 
-`t_dept`는 원래의 27행으로 돌아왔지만, 직원 207은 **이제 존재하지 않는 부서 1**에 소속된 채 남았습니다. 사본에는 「직원의 부서는 부서 테이블에 있어야 한다」는 규칙(FK)이 없어서 막지 못했습니다. 원본 `departments`·`employees`에는 이 규칙(`emp_dept_fk`)이 있어, 직원이 소속된 부서를 지우려 하면 거부됩니다. 이런 규칙은 DDL 단원(참조 무결성)에서 다룹니다.
+`t_dept`는 원래의 27행으로 돌아왔지만, 직원 207은 **이제 존재하지 않는 부서 1**에 소속된 채 남았습니다(예시는 2-7에서 부서 1을 고른 경우입니다). 사본에는 「직원의 부서는 부서 테이블에 있어야 한다」는 규칙(FK)이 없어서 막지 못했습니다. 원본 `departments`·`employees`에는 이 규칙(`emp_dept_fk`)이 있어, 직원이 소속된 부서를 지우려 하면 거부됩니다. 이런 규칙은 DDL 단원(참조 무결성)에서 다룹니다.
 
 **[응용]** 첫 문장은 `DELETE 0`, 두 번째 문장이 맞습니다.
 
@@ -914,6 +920,8 @@ RETURNING employee_id, first_name, last_name;
 `= NULL`은 참이 되지 않아 0행을 지웁니다(4-3). 부서가 없는 직원은 178번 Kimberely Grant 1명입니다(4단원 1-6).
 :::
 
+> 확인 문제를 마치면 `SET search_path TO bom;`으로 돌아옵니다.
+
 ## 5. 안전하게 DML 하는 순서
 
 ### 5-1. 다섯 단계 습관 ⭐ {keep}
@@ -932,7 +940,7 @@ copy | ⑤ 연습은 사본에서 | t_ 테이블만 (0장) | rose
 
 :::teacher 강사 확인
 - 운영안 Day 4 4H(승인 흐름과 이력 원칙)에는 「**DELETE 대신 상태 변경**, 이력 덮어쓰기 금지」가 있습니다. 오늘 4-2에서 입고 완료 예정을 DELETE로 지웠지만, 실무 기록 테이블에서는 행을 지우지 않고 `status = '입고완료'`처럼 상태를 바꿔 「언제 무엇이 있었는지」를 남기는 경우가 많다는 점을 예고해 두세요.
-- 도전 과제(시간이 남으면): Day 3 7교시의 Q11(컴프레서 결품일) 쿼리에서 `scheduled_receipt`를 `t_scheduled_receipt`로, `inventory`를 `t_inventory`로 바꿔 실행해 4-3의 변경(12/3 600개, 12/5 800개)으로 결품일이 어떻게 바뀌는지 확인하게 하세요. 이 교안에서는 결과를 검증하지 않았습니다.
+- 도전 과제(시간이 남으면): Day 3 7교시의 Q11(컴프레서 결품일) 쿼리에서 `scheduled_receipt`를 `t_scheduled_receipt`로, `inventory`를 `t_inventory`로 바꿔 실행해 4-3의 변경(12/3 600개, 12/5 800개)으로 결품일이 어떻게 바뀌는지 확인하게 하세요. 이 교안에서는 결과를 검증하지 않았습니다. 도전 과제는 복습 문제(6장)를 풀기 **전에** 실행하세요. 복습 4·6까지 풀면 재고에는 3번·6번 입고가 이미 더해진 채로 입고 예정이 원본으로 되돌아가, 같은 수량이 두 번 잡힙니다.
 :::
 
 ## 6. 복습 문제
@@ -952,7 +960,7 @@ history | 6 · 전체 삭제 + 복구 | INSERT … SELECT | hot
 
 ### 6-1. 복습 1 {keep}
 
-**1.** (기존 실습문제 1번 유형) 정수 필터(`MFT43979901`)의 입고 예정을 `t_scheduled_receipt`에 넣고 확인하세요.
+**1.** 정수 필터(`MFT43979901`)의 입고 예정을 `t_scheduled_receipt`에 넣고 확인하세요.
 `receipt_id` 11, 사이트 `CW`, 업체 `V1010`, 도착일 2026-12-10, 수량 500, PO `'PO26-1110'`, 구분 `'Planned'`
 
 ```result 출력 결과 — INSERT 0 1
@@ -963,8 +971,8 @@ history | 6 · 전체 삭제 + 복구 | INSERT … SELECT | hot
 
 ### 6-2. 복습 2 {keep}
 
-**2.** (기존 실습문제 2번 유형) 재고 실사 결과, 창원(CW) 컴프레서(`ECP39799101`) 재고가 시스템보다 50개 많았습니다. `t_inventory`의 재고를 지금 값보다 50 늘리고, `RETURNING`으로 확인하세요.
-[힌트: 1150이라는 숫자를 직접 쓰지 말고 `on_hand_qty + 50`]
+**2.** 재고 실사 결과, 창원(CW) 컴프레서(`ECP39799101`) 재고가 시스템보다 50개 많았습니다. `t_inventory`의 재고를 지금 값보다 50 늘리고, `RETURNING`으로 확인하세요.
+[힌트: 지금 값 1150에 50을 더한 1200을 직접 쓰지 말고 `on_hand_qty + 50`]
 
 ```result 출력 결과 — UPDATE 1
 | site_code | part_no | on_hand_qty | location |
@@ -974,7 +982,7 @@ history | 6 · 전체 삭제 + 복구 | INSERT … SELECT | hot
 
 ### 6-3. 복습 3 {keep}
 
-**3.** (기존 실습문제 3번 유형) 마이컴(`EIC93178801`)의 입고 예정 중 「계획 입고(Planned)」만 취소되었습니다. 해당 행만 지우고 `RETURNING`으로 확인하세요. 확정 입고(Scheduled) 4번은 남아야 합니다.
+**3.** 마이컴(`EIC93178801`)의 입고 예정 중 「계획 입고(Planned)」만 취소되었습니다. 해당 행만 지우고 `RETURNING`으로 확인하세요. 확정 입고(Scheduled) 4번은 남아야 합니다.
 
 ```result 출력 결과 — DELETE 1
 | receipt_id | part_no | eta_date | qty | receipt_type |
@@ -984,7 +992,7 @@ history | 6 · 전체 삭제 + 복구 | INSERT … SELECT | hot
 
 ### 6-4. 복습 4 {keep}
 
-**4.** (기존 실습문제 4번 유형) 도어 글라스(`MGL96663301`) 입고 예정 3번이 입고되었습니다.
+**4.** 도어 글라스(`MGL96663301`) 입고 예정 3번이 입고되었습니다.
 ① 3번의 수량만큼 `t_inventory`의 CW 재고를 늘리고 ② 3번 입고 예정을 지우세요.
 [힌트: 3-5 — 수량은 서브쿼리로 가져옵니다.]
 
@@ -1004,7 +1012,7 @@ history | 6 · 전체 삭제 + 복구 | INSERT … SELECT | hot
 
 ### 6-5. 복습 5 {keep}
 
-**5.** (기존 실습문제 6번 유형) 재고 실사 결과가 아래처럼 들어왔습니다. `t_inventory`에 이미 있는 행(사이트·품번·위치가 같은 행)이면 UPDATE, 없으면 INSERT 하세요.
+**5.** 재고 실사 결과가 아래처럼 들어왔습니다. `t_inventory`에 이미 있는 행(사이트·품번·위치가 같은 행)이면 UPDATE, 없으면 INSERT 하세요.
 
 - CW, `EMT68237401`(DD 모터), 위치 `WH-C1` : 950개
 - CW, `ECP39799101`(컴프레서), 위치 `WH-B` : 100개 (기준일 2026-11-30)
@@ -1030,7 +1038,7 @@ history | 6 · 전체 삭제 + 복구 | INSERT … SELECT | hot
 
 ### 6-6. 복습 6 {keep}
 
-**6.** (기존 실습문제 8번 유형 + 복구) `t_scheduled_receipt`의 모든 행을 지운 뒤, 원본 `scheduled_receipt`의 데이터로 다시 채우세요. 지운 행 수와 다시 채운 뒤의 행 수를 확인합니다.
+**6.** `t_scheduled_receipt`의 모든 행을 지운 뒤, 원본 `scheduled_receipt`의 데이터로 다시 채우세요. 지운 행 수와 다시 채운 뒤의 행 수를 확인합니다.
 
 ```result 출력 결과 — DELETE 7 → INSERT 0 6
 | count |
@@ -1066,7 +1074,7 @@ RETURNING receipt_id, part_no, eta_date, qty, receipt_type;
 ```
 
 - 2번: 재고 실사 결과는 「50개 많다」는 **차이**입니다. 1150을 보고 `SET on_hand_qty = 1200`이라고 쓰면, 그 사이 다른 사람이 재고를 바꿨을 때 그 변경을 덮어씁니다(3-3).
-- 3번: `part_no` 조건만 쓰면 확정 입고 4번(6,000개)까지 지워집니다. 조건이 두 개 필요한 이유를 확인하세요. 기존 실습문제 3번(`CUST_ID = 'C0002' AND BADGE_ID = 'B003'`)과 같은 모양입니다.
+- 3번: `part_no` 조건만 쓰면 확정 입고 4번(6,000개)까지 지워집니다. 조건이 두 개 필요한 이유를 확인하세요.
 :::
 
 ### 6-8. 복습 4 답 {keep}
@@ -1084,7 +1092,7 @@ DELETE FROM t_scheduled_receipt
 RETURNING receipt_id, part_no, qty;
 ```
 
-- 4번: ①과 ②의 **순서**가 중요합니다. ②를 먼저 하면 ①의 서브쿼리가 3번 입고를 찾지 못해 NULL을 더하게 됩니다(`on_hand_qty + NULL` = NULL). 그리고 ①만 하고 ②를 빠뜨리면 같은 1,500개가 재고와 입고 예정에 동시에 남습니다(3-5 강사 확인).
+- 4번: ①과 ②의 **순서**가 중요합니다. ②를 먼저 하면 ①의 서브쿼리가 3번 입고를 찾지 못해 NULL을 더하게 됩니다(`on_hand_qty + NULL` = NULL). 그리고 ①만 하고 ②를 빠뜨리면 같은 1,500개가 재고와 입고 예정에 동시에 남아, 결품 계산에서 두 번 더해집니다(7-2).
 :::
 
 ### 6-9. 복습 5 답 {keep}
@@ -1111,7 +1119,7 @@ SELECT site_code, part_no, on_hand_qty, as_of_date, location
  ORDER BY part_no, location;
 ```
 
-- 5번: DD 모터는 사내 부품라인 창고(`WH-C1`)에 있습니다. 같은 컴프레서라도 **위치(`location`)가 다르면 다른 행**입니다(`inventory`의 PK가 `site_code, part_no, location`). 컴프레서는 이제 재고 행이 2개라, 서브쿼리 단원 4-3 강사 확인처럼 재고를 스칼라 서브쿼리로 가져오면 오류가 납니다 — `SUM`으로 감싸야 합니다.
+- 5번: DD 모터는 사내 부품라인 창고(`WH-C1`)에 있습니다. 같은 컴프레서라도 **위치(`location`)가 다르면 다른 행**입니다(`inventory`의 PK가 `site_code, part_no, location`). 컴프레서는 이제 재고 행이 2개라, 재고를 스칼라 서브쿼리로 가져오면 오류가 납니다 — `SUM`으로 감싸야 합니다.
 :::
 
 ### 6-10. 복습 6 답 {keep}
@@ -1147,7 +1155,7 @@ SELECT COUNT(*) FROM t_scheduled_receipt;
 - **DELETE**: `DELETE FROM 테이블 WHERE 조건;` 행 단위로 지웁니다.
 - **WHERE를 빠뜨리면** UPDATE·DELETE는 **모든 행**에 적용되고, 오류는 나지 않습니다. 조건이 틀리면 `UPDATE 0`/`DELETE 0`으로 조용히 지나갑니다. NULL 조건은 `IS NULL`.
 - **RETURNING**: 바뀌거나 지워진 행을 그 자리에서 보여 줍니다.
-- **안전한 순서**: 같은 WHERE로 SELECT → DML 실행 → 행 수 확인 → 결과 확인. 확정 전에 되돌리는 방법은 다음 교시(TCL).
+- **안전한 순서**: 같은 WHERE로 SELECT → DML 실행 → 행 수 확인 → 결과 확인, 그리고 연습은 사본에서. 확정 전에 되돌리는 방법은 다음 교시(TCL).
 :::
 
 ### 7-2. 확인 문제
@@ -1156,7 +1164,7 @@ SELECT COUNT(*) FROM t_scheduled_receipt;
 Q. `UPDATE t_part_sourcing SET currency = 'USD';`를 실행했더니 `UPDATE 52`가 나왔습니다. 무엇이 잘못되었고, 원본이 있다면 어떻게 복구하나요?
 A. `WHERE`가 없어 52행 모두의 통화가 USD로 바뀌었습니다. 원본 `part_sourcing`에서 같은 키(품번·업체·사이트)의 통화를 스칼라 서브쿼리로 가져와 `UPDATE … SET currency = (SELECT …)`로 되돌립니다.
 
-Q. `DELETE FROM t_scheduled_receipt WHERE po_no = NULL;`의 결과가 `DELETE 0`입니다. 왜이고, 어떻게 고치나요?
+Q. `DELETE FROM t_scheduled_receipt WHERE po_no = NULL;`의 결과가 `DELETE 0`입니다. 왜 그런가요? 어떻게 고치나요?
 A. NULL과의 `=` 비교는 참이 되지 않아 어떤 행도 조건에 맞지 않습니다. `WHERE po_no IS NULL`로 씁니다.
 
 Q. 컬럼 목록 없이 `INSERT INTO t_scheduled_receipt VALUES (…)`를 쓰면 어떤 위험이 있나요?

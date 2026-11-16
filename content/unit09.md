@@ -13,12 +13,12 @@ title: 데이터 확정·복원
 :::
 
 :::teacher 단원 구성 (60분)
-- 운영안 Day 4 **2H(트랜잭션: BEGIN/COMMIT/ROLLBACK, PostgreSQL 클라이언트는 기본 자동 커밋이라 BEGIN 필수, 마스터 변경 + 이력 INSERT를 한 묶음으로 / Q13 UIT 정정 + uit_change_history INSERT, 일부러 실패시켜 ROLLBACK 확인)** 에 해당합니다. 1교시(DML 기초)에서 INSERT·UPDATE·DELETE를 배운 뒤라는 전제입니다.
+- 운영안 Day 4 **2H(2교시 — 트랜잭션: BEGIN/COMMIT/ROLLBACK, PostgreSQL 클라이언트는 기본 자동 커밋이라 BEGIN 필수, 마스터 변경 + 이력 INSERT를 한 묶음으로 / Q13 UIT 정정 + uit_change_history INSERT, 일부러 실패시켜 ROLLBACK 확인)** 에 해당합니다. 1교시(DML 기초)에서 INSERT·UPDATE·DELETE를 배운 뒤라는 전제입니다.
 - 기존 교안 `11. TCL.pptx` · `11. TCL.txt`의 **순서(SQL 분류 → 트랜잭션 → ACID → COMMIT/ROLLBACK → 세션·읽기 일관성 → LOCK)** 를 따르되, 송금 예제는 BOM 데이터의 **UIT 정정(Q13)** 으로 바꿨습니다. 기존 `.txt`의 「DROP·TRUNCATE는 ROLLBACK 불가」는 PostgreSQL에서는 성립하지 않으므로 4장에서 실제 동작으로 다시 다룹니다.
 - 교안의 모든 SQL과 실행 결과는 `schema_postgres.sql`로 적재한 DB에서 **직접 실행한 결과**입니다. 오류·경고 메시지도 실제 출력입니다. 두 세션 실험(5장)은 psql 2개를 동시에 띄워 실행했습니다. (검증 환경: PostgreSQL 16.15, psql. 수업 PC는 PostgreSQL 18이므로 수업 전 한 번 더 실행해 보세요.)
 - `CURRENT_DATE`가 들어간 결과는 **실행한 날짜**가 찍힙니다(검증일 2026-11-05). 결과표에서는 날짜 컬럼을 빼거나 그대로 두고 「실행 날짜」라고 안내하세요.
 - 원본 테이블을 지키기 위해 **연습용 사본 3개**(`t_part_master`, `t_part_sourcing`, `t_uit_history`)에서 실습합니다(0장). 사본은 `LIKE … INCLUDING ALL`로 만들어 **PK가 그대로 복사**되므로, 3장의 「일부러 실패」(PK 중복)가 사본에서도 재현됩니다.
-- 각 장 끝 「확인 문제」(복습 1 + 응용 1)는 HR 실습 데이터(`hr_postgres.sql`, `hr` 스키마)로 만들었고, 답안 결과도 직접 실행한 값입니다. HR 문제는 원본을 바꾸므로 ==모두 ROLLBACK으로 끝나거나 원래 값으로 되돌리는 문장==을 포함했습니다.
+- 2~5장 끝 「확인 문제」(복습 1 + 응용 1)는 HR 실습 데이터(`hr_postgres.sql`, `hr` 스키마)로 만들었고, 답안 결과도 직접 실행한 값입니다. HR 문제는 원본을 바꾸므로 ==모두 ROLLBACK으로 끝나거나 원래 값으로 되돌리는 문장==을 포함했습니다.
 
 | 교시 | 시간 | 내용 | 해당 장 | 기존 교안 대응 |
 | --- | --- | --- | --- | --- |
@@ -104,7 +104,7 @@ UNION ALL SELECT 't_uit_history',   COUNT(*) FROM t_uit_history;
 | ①② 모두 반영 | 정상 |
 | ①② 모두 취소 | 정상 (아무 일도 없었던 것과 같음) |
 
-반쪽만 반영된 두 경우가 모두 **데이터 불일치**입니다. 그래서 ①과 ②를 한 트랜잭션으로 묶어 「둘 다 되거나, 둘 다 안 되게」 만듭니다. 이번 시간의 목표가 바로 이것이고, 운영안 Q13입니다.
+반쪽만 반영된 두 경우가 모두 **데이터 불일치**입니다. 그래서 ①과 ②를 한 트랜잭션으로 묶어 「둘 다 되거나, 둘 다 안 되게」 만듭니다. 이번 시간의 목표가 바로 이것입니다(Q13).
 
 ### 1-3. 트랜잭션의 4가지 특성 (ACID) {keep}
 
@@ -123,7 +123,7 @@ PostgreSQL은 **모든 SQL 문장을 트랜잭션 안에서** 실행합니다. `
 
 psql에서 지금 설정을 확인합니다.
 
-```sql
+```sql psql 전용 명령
 \echo :AUTOCOMMIT
 ```
 
@@ -300,7 +300,7 @@ SELECT part_no, vendor_code, moq
 | EMT73633001 | V1009 | 600 |
 ```
 
-`COMMIT`에서 트랜잭션이 끝났으므로 뒤의 `ROLLBACK`은 2-3과 같은 경고만 냅니다. `ROLLBACK`은 ==마지막 COMMIT 이후의 변경까지만== 되돌립니다(지속성).
+`COMMIT`에서 트랜잭션이 끝났으므로 뒤의 `ROLLBACK`은 2-3과 같은 경고만 냅니다. `ROLLBACK`은 ==지금 열려 있는 트랜잭션(`BEGIN` 이후)의 변경만== 되돌립니다. 이미 `COMMIT`된 것, `BEGIN` 없이 실행된 것은 되돌릴 수 없습니다(지속성).
 
 > 원래 MOQ는 1이었습니다. 0장 스크립트를 다시 실행하면 사본 전체가 처음 상태로 돌아갑니다.
 
@@ -408,6 +408,8 @@ UPDATE employees SET salary = 8300 WHERE employee_id = 206;   -- 원래 값으�
 ```
 :::
 
+> 확인 문제를 마치면 `SET search_path TO bom;`으로 돌아옵니다.
+
 ## 3. Q13 — 마스터 변경 + 이력 INSERT를 한 묶음으로
 
 ### 3-1. 이력 테이블 살펴보기 {keep}
@@ -471,7 +473,7 @@ SELECT uit FROM t_part_master WHERE part_no = 'EMT73633001';
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 ```
 
-PostgreSQL에서는 트랜잭션 안에서 **문장 하나가 오류를 내면 그 트랜잭션 전체가 중단 상태**가 됩니다. 이후의 문장은 SELECT라도 모두 거부되고, 트랜잭션을 끝내는(`COMMIT` 또는 `ROLLBACK`) 것만 받아들입니다.
+PostgreSQL에서는 트랜잭션 안에서 **문장 하나가 오류를 내면 그 트랜잭션 전체가 중단 상태**가 됩니다. 이후의 문장은 SELECT라도 모두 거부되고, 트랜잭션을 끝내는(`COMMIT` 또는 `ROLLBACK`) 것만 받아들입니다. (저장 지점이 있으면 `ROLLBACK TO SAVEPOINT`도 가능합니다 — 3-6)
 :::
 
 ### 3-2. 중단된 트랜잭션을 COMMIT하면 {keep}
@@ -629,7 +631,7 @@ UIT(D) ↔ Line Type(I)이 짝이 맞고, 이력에도 Y가 남았습니다. ==�
 
 ### 3-6. 로터 정정 — 이력 번호를 또 잘못 넣으면 {keep}
 
-**예:** 로터(`EMT78269001`)는 Line Type이 이미 I(수입)인데 UIT가 G입니다(README A1). 3-5 실행 후 이어서, UIT를 D로 정정하면서 이력 번호를 **6번으로 잘못** 넣었습니다.
+**예:** 로터(`EMT78269001`)는 Line Type이 이미 I(수입)인데 UIT가 G입니다(Day 2에서 찾은 이상 A1). 3-5 실행 후 이어서, UIT를 D로 정정하면서 이력 번호를 **6번으로 잘못** 넣었습니다.
 
 ```sql
 BEGIN;
@@ -812,6 +814,8 @@ SELECT employee_id, department_id FROM employees WHERE employee_id = 104;
 트리거가 넣은 이력도 **같은 트랜잭션의 일부**라서 `ROLLBACK` 때 함께 취소됩니다. 부서 변경(UPDATE)과 이력(INSERT)이 함께 움직이는 구조는 3-3의 Q13과 같습니다. 차이는 이력을 **사람이 직접 넣느냐, 트리거가 넣느냐**입니다.
 :::
 
+> 확인 문제를 마치면 `SET search_path TO bom;`으로 돌아옵니다.
+
 ## 4. TRUNCATE · DROP도 트랜잭션 안에서
 
 ### 4-1. BEGIN 안의 TRUNCATE는 되돌릴 수 있다 {keep}
@@ -833,7 +837,7 @@ SELECT COUNT(*) FROM t_uit_history;
 | 0 |
 ```
 
-```result ROLLBACK 후
+```result ROLLBACK 후 (TRUNCATE 전과 같은 행 수 — 3-5·3-6까지 실행했다면 7)
 | count |
 | --- |
 | 7 |
@@ -967,6 +971,8 @@ HINT:  Truncate table "employees" at the same time, or use TRUNCATE ... CASCADE.
 `employees.department_id`가 `departments`를 참조하는 FK라서, 부모 테이블만 비울 수 없습니다(1단원 참조 무결성). HINT의 `CASCADE`는 참조하는 테이블까지 함께 비우므로 실습 원본에서는 실행하지 마세요.
 :::
 
+> 확인 문제를 마치면 `SET search_path TO bom;`으로 돌아옵니다.
+
 ## 5. 세션 · 읽기 일관성 · LOCK
 
 ### 5-1. 세션이란 {keep}
@@ -1012,7 +1018,7 @@ SELECT pg_backend_pid();
 
 ### 5-2. 기본 격리 수준 — Read Committed {keep}
 
-PostgreSQL의 기본 격리 수준은 **Read Committed**입니다. 이 수준에서 SELECT는 **쿼리가 시작되기 전에 확정된 데이터만** 봅니다.
+PostgreSQL의 기본 격리 수준(isolation level — 1-3의 고립성을 어느 정도까지 지킬지 정하는 설정)은 **Read Committed**입니다. 이 수준에서 SELECT는 **쿼리가 시작되기 전에 확정된 데이터만** 봅니다.
 
 ```sql
 SHOW default_transaction_isolation;
@@ -1044,17 +1050,17 @@ SHOW default_transaction_isolation;
 
 - 세션 1이 UPDATE한 행은 트랜잭션이 끝날 때(`COMMIT`/`ROLLBACK`)까지 **잠겨(LOCK)** 있습니다. 세션 2의 UPDATE는 **오류 없이 기다립니다.**
 - 세션 1이 `COMMIT`하면 세션 2는 **확정된 15를 기준으로** +10을 적용해 25가 됩니다. 두 사람의 변경(+5, +10)이 모두 반영되었습니다.
-- 세션 1이 `COMMIT` 대신 `ROLLBACK`했다면 세션 2는 **원래 값 10을 기준으로** 적용해 **20**이 됩니다(검증 결과 20).
+- 세션 1이 `COMMIT` 대신 `ROLLBACK`했다면 세션 2는 **원래 값 10을 기준으로** 적용해 **20**이 됩니다.
 
 ### 5-3. LOCK은 행 단위, 조회는 막지 않습니다 {keep}
 
-**서로 다른 행이면 기다리지 않습니다.** 세션 1이 `MGK25528301`을 잡고 있는 동안, 다른 세션에서 다른 가스켓(`MGK31172901`)을 UPDATE하면 바로(검증 시 약 2ms) `UPDATE 1`이 나옵니다. LOCK은 **행 단위**입니다.
+**서로 다른 행이면 기다리지 않습니다.** 세션 1에서 다시 `BEGIN`과 ②의 UPDATE를 실행해 `MGK25528301` 행을 잡아 둔 상태에서, 다른 세션에서 다른 가스켓(`MGK31172901`)을 UPDATE하면 바로 `UPDATE 1`이 나옵니다. LOCK은 **행 단위**입니다.
 
 > 행 잠금은 **조회를 막지 않습니다.** ④처럼 세션 1이 잠그고 있는 동안에도 세션 2의 SELECT는 바로 결과가 나옵니다. 막히는 것은 같은 행을 **고치려는** 문장입니다.
 
 ### 5-4. 누가 누구를 기다리는지 확인하기 {keep}
 
-세션 2가 멈춰 있을 때(⑤ 이후), **세 번째 창**에서 아래를 실행하면 대기 상황이 보입니다.
+세션 1에서 다시 `BEGIN`과 ②의 UPDATE를 실행해 행을 잡아 둔 상태에서, 세션 2가 ⑤의 UPDATE를 다시 실행해 멈춰 있을 때 **세 번째 창**에서 아래를 실행하면 대기 상황이 보입니다.
 
 ```sql
 SELECT pid
@@ -1063,13 +1069,13 @@ SELECT pid
      , wait_event_type
      , left(query, 50)       AS query
   FROM pg_stat_activity
- WHERE datname = 'bom_lab'
+ WHERE datname = current_database()
    AND pid <> pg_backend_pid()
    AND backend_type = 'client backend'
  ORDER BY pid;
 ```
 
-```result pid 숫자는 실행할 때마다 다릅니다
+```result pid 숫자는 실행할 때마다 다릅니다 · query는 그 세션이 마지막으로 실행한 문장입니다
 | pid | blocked_by | state | wait_event_type | query |
 | --- | --- | --- | --- | --- |
 | 444 | {} | idle in transaction | Client | UPDATE t_part_sourcing SET lead_time_days = lead_t |
@@ -1080,6 +1086,7 @@ SELECT pid
 
 - 세션 1(444)은 **`idle in transaction`** — 트랜잭션을 열어 둔 채 아무것도 하지 않는 상태입니다.
 - 세션 2(445)는 `wait_event_type = Lock`, `blocked_by = {444}` — **444 때문에 기다리는 중**입니다.
+- `query`는 그 세션이 **마지막으로 실행한 문장**입니다. 세션 1이 UPDATE 뒤에 SELECT를 실행했다면 그 SELECT가 보입니다.
 
 ==`BEGIN`을 열어 놓고 자리를 비우면 다른 사람의 작업이 멈춥니다.== 트랜잭션은 짧게, 확인이 끝나면 바로 `COMMIT` 또는 `ROLLBACK`으로 닫으세요.
 
@@ -1097,6 +1104,14 @@ UPDATE t_part_sourcing SET lead_time_days = lead_time_days + 1 WHERE part_no = '
 SET
 ERROR:  canceling statement due to lock timeout
 ```
+
+확인이 끝나면 설정을 기본값으로 되돌립니다. 되돌리지 않으면 이 창에서는 이후의 잠금 대기가 모두 1초 뒤 오류로 끝납니다.
+
+```sql
+RESET lock_timeout;
+```
+
+> 실습이 끝나면 세션 1에서 `ROLLBACK;`으로 트랜잭션을 닫습니다.
 
 :::teacher 강사 확인
 - 기존 `11. TCL.txt`의 「SQL Developer 2개 연결」 실습을 「SQL Shell (psql) 2개」로 바꾼 것입니다. pgAdmin에서 Query Tool 창 2개로 진행하려면 수업 PC에서 두 창의 `SELECT pg_backend_pid();` 값이 다른지 먼저 확인하세요(같으면 같은 세션이라 실습이 성립하지 않습니다).
@@ -1119,7 +1134,7 @@ ERROR:  canceling statement due to lock timeout
 | ④ | `COMMIT;` | |
 | ⑤ | | `SELECT employee_id, salary FROM employees WHERE employee_id = 100;` |
 
-**[응용]** ③을 `UPDATE employees SET salary = 24500 WHERE employee_id = 100;`(② 화면에서 본 24000에 500을 직접 더한 값)으로 바꾸면 ⑤의 결과는 어떻게 될까요? 무엇이 문제인지 설명하세요.
+**[응용]** (복습을 마치고 급여를 24000으로 되돌린 뒤 ①부터 다시 실행합니다. 확인 후 다시 24000으로 되돌립니다.) ③을 `UPDATE employees SET salary = 24500 WHERE employee_id = 100;`(② 화면에서 본 24000에 500을 직접 더한 값)으로 바꾸면 ⑤의 결과는 어떻게 될까요? 무엇이 문제인지 설명하세요.
 :::
 
 ### 5-5. 확인 문제 답 — 복습 {keep}
@@ -1150,6 +1165,8 @@ ERROR:  canceling statement due to lock timeout
 `SET salary = 24500`은 「지금 값에 500을 더하라」가 아니라 「24500으로 덮어써라」이므로, 기다린 뒤에도 세션 1이 만든 25000을 무시하고 덮어씁니다. ==화면에서 본 값으로 계산해 넣지 말고, `salary = salary + 500`처럼 SQL 안에서 계산==해야 동시에 고쳐도 변경이 유실되지 않습니다.
 :::
 
+> 확인 문제를 마치면 **두 창 모두** `SET search_path TO bom;`으로 돌아옵니다.
+
 ## 6. 복습 문제
 
 ### 6-0. 복습 문제 안내 {keep}
@@ -1170,6 +1187,7 @@ trash-2 | 5 · (심화) TRUNCATE | BEGIN 안에서 먼저 | hot
 
 - 이력 값: `change_id` 7, `old_uit` `'G'`, `new_uit` `'D'`, `changed_by_dept` `'Procurement'`, `change_reason` `'수입 조달 확인, UIT 정정'`, `changed_at` `CURRENT_DATE`, `line_type_updated` `'Y'`
 - (로터의 Line Type은 이미 I이므로 Y로 기록합니다.)
+- (이력 번호는 3-6과 같은 7번을 씁니다.)
 
 ```result 출력 결과 (총 1행)
 | part_no | description_kr | uit | line_type | change_id | old_uit | new_uit | line_type_updated |
@@ -1220,7 +1238,7 @@ SELECT part_no, lead_time_days FROM t_part_sourcing WHERE part_no = 'MGK25528301
 
 ### 6-4. 복습 4 (심화) {keep}
 
-**4.** (심화) 두 세션으로 실행합니다. 도어 가스켓(`MGK25528301`)의 리드타임은 10입니다. ①의 결과, ②에서 일어나는 일, ③의 결과를 쓰세요.
+**4.** (심화) 두 세션으로 실행합니다. 두 창 모두 `SET search_path TO bom;`을 먼저 실행하세요. 도어 가스켓(`MGK25528301`)의 리드타임은 10입니다. ①의 결과, ②에서 일어나는 일, ③의 결과를 쓰세요.
 
 ```text 실행 순서
 세션 1: BEGIN; UPDATE … SET lead_time_days = lead_time_days + 5 …;
@@ -1330,7 +1348,7 @@ SELECT COUNT(*) FROM t_part_sourcing;       -- 52
 - **트랜잭션**: 여러 SQL 문장을 「전부 반영 또는 전부 취소」로 묶는 최소 작업 단위. 특성은 ACID(원자성·일관성·고립성·지속성).
 - **자동 커밋**: PostgreSQL(psql·pgAdmin 기본값)은 `BEGIN`이 없으면 문장마다 즉시 확정합니다. ==묶으려면 반드시 `BEGIN`.==
 - **COMMIT / ROLLBACK**: `COMMIT`은 영구 반영, `ROLLBACK`은 `BEGIN` 이후 변경 전부 취소. `BEGIN` 없이 `ROLLBACK`하면 `WARNING: there is no transaction in progress` — 이미 확정된 것입니다.
-- **중단 상태**: 트랜잭션 안에서 오류가 나면 이후 문장은 모두 거부되고, `COMMIT`해도 `ROLLBACK`으로 처리됩니다. 반쪽 반영이 생기지 않습니다.
+- **중단 상태**: 트랜잭션 안에서 오류가 나면 이후 문장은 거부되고, `COMMIT`해도 `ROLLBACK`으로 처리됩니다. 반쪽 반영이 생기지 않습니다.
 - **SAVEPOINT**: `ROLLBACK TO SAVEPOINT 이름`으로 저장 지점 이후만 취소하고 트랜잭션을 이어 갑니다.
 - **마스터 변경 + 이력 INSERT**(Q13): 관련된 변경(UIT·Line Type·이력)을 모두 한 트랜잭션에 넣어야 불일치(A1·A9)가 생기지 않습니다.
 - **TRUNCATE · DROP**: `BEGIN` 안에서는 되돌릴 수 있지만, `BEGIN` 없이 실행하면 즉시 확정. `CREATE DATABASE`처럼 트랜잭션 안에서 실행할 수 없는 명령도 있습니다.
@@ -1339,7 +1357,7 @@ SELECT COUNT(*) FROM t_part_sourcing;       -- 52
 - **변경 유실 방지**: 화면에서 본 값으로 덮어쓰지 말고 `컬럼 = 컬럼 + 값`처럼 SQL 안에서 계산합니다.
 :::
 
-### 7-2. 확인 문제
+### 7-2. 마무리 퀴즈
 
 :::quiz
 Q. psql에서 `UPDATE` 후 `ROLLBACK`했더니 `WARNING: there is no transaction in progress`가 나왔습니다. 데이터는 어떤 상태이고, 원인은 무엇인가요?

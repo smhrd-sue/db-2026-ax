@@ -19,8 +19,10 @@ title: 데이터 구조 만들기
 - INSERT는 **제약조건이 실제로 막는지 확인하는 용도로만** 씁니다. 문법은 DML 단원에서 다룹니다.
 - 원본(`bom`) 보호를 위해 모든 실습 테이블은 **`lab` 스키마**에 만듭니다(1-4). 수업이 끝나면 `DROP SCHEMA lab CASCADE;` 한 줄로 정리됩니다(7장 5번).
 - 교안의 모든 SQL과 실행 결과는 `schema_postgres.sql`로 적재한 DB에서 **위에서부터 순서대로 직접 실행한 결과**입니다. 오류 메시지도 실제 출력입니다. (검증 환경: PostgreSQL 16, `DateStyle = ISO, MDY`. 수업 PC는 PostgreSQL 18이므로 수업 전 한 번 더 실행해 보세요.) 순서를 바꿔 실행하면 일부 결과(행 수, 오류 여부)가 달라집니다. PostgreSQL 18은 NOT NULL도 `pg_constraint`에 기록하므로(3-5), 제약조건 조회 쿼리에는 모두 `contype IN ('p', 'u', 'c', 'f')` 조건을 넣어 두 버전에서 결과가 같도록 했습니다.
-- 각 장 끝 「확인 문제」(복습 1 + 응용 1)는 기존 교안 실습(회원·블로그)과 HR 실습 데이터(`hr_postgres.sql`, `hr` 스키마)로 만들었고, 답안 결과도 직접 실행한 값입니다. 실행 전 `SET search_path TO lab, hr;`가 필요합니다.
+- 2~5장 끝 「확인 문제」(복습 1 + 응용 1)는 기존 교안 실습(회원·블로그)과 HR 실습 데이터(`hr_postgres.sql`, `hr` 스키마)로 만들었고, 답안 결과도 직접 실행한 값입니다(6장은 도전 1문항, BOM 데이터). 실행 전 `SET search_path TO lab, hr;`가 필요하고, 마친 뒤에는 `SET search_path TO lab, bom;`으로 돌아옵니다.
 - 이 단원은 1교시(60분) 분량입니다. 확인 문제와 7장 복습 문제는 시간에 따라 일부만 풀고, 나머지는 과제로 활용하세요.
+- 확인 문제는 서로 이어집니다: 2-7(`member`·`emp_ship`) → 3-7(`blog`, `member`에 제약조건) → 4-5(`blog`·`emp_ship` 고치기) → 5-4(`member`·`blog` 삭제, `emp_ship` TRUNCATE). 앞 문제를 건너뛰면 뒤 문제도 함께 건너뛰어야 합니다.
+- 본문 실습도 앞 결과에 의존합니다. 다음은 건너뛰면 뒤가 막힙니다: 1-4(`lab` 스키마), 2-3(`part_memo`), 2-6의 사본 3개(`sourcing_copy`·`bom_wm`·`vendor_copy`)와 중복 INSERT(3-6 ③), 3-3~3-4(`inspection`과 행 4개 → 4·5장 결과), 3-6 사본 정리, 4-2~4-4(→ 5장), 6-3(`shortage_alert`).
 
 | 교시 | 시간 | 내용 | 해당 장 | 기존 교안 대응 |
 | --- | --- | --- | --- | --- |
@@ -154,6 +156,8 @@ SELECT current_schemas(false);
 - `search_path`는 「스키마 이름을 생략했을 때 찾아볼 순서」입니다. 이제 **새로 만드는 테이블은 맨 앞의 `lab`** 에 생기고, `part_master`처럼 이름만 쓰면 `lab`에 없으니 `bom`에서 찾습니다.
 - 원본을 가리킬 때는 이 교안처럼 ==`bom.part_master`, `bom.vendor`로 스키마를 붙여 쓰는 습관==을 들이세요. 어느 테이블을 읽는지 헷갈리지 않습니다.
 
+> `search_path`는 접속할 때마다 초기화됩니다. 다시 접속했다면 `SET search_path TO lab, bom;`부터 다시 실행하세요. (`CREATE SCHEMA lab;`은 처음 한 번만 실행합니다.)
+
 :::teacher 강사 확인
 - `search_path`는 접속(세션)마다 초기화됩니다. 쉬는 시간 뒤 DBeaver를 다시 연결했다면 `SET search_path TO lab, bom;`부터 다시 실행하게 하세요. 테이블이 `public`에 만들어졌다는 질문이 나오면 대부분 이 원인입니다.
 :::
@@ -177,7 +181,7 @@ CREATE TABLE 테이블명 (
 
 | 자료형 | 저장하는 값 | BOM 데이터 예 |
 | --- | --- | --- |
-| `CHAR(n)` | **정확히 n글자**인 문자 (짧으면 뒤를 공백으로 채움) | `part_no CHAR(11)`, `uit CHAR(1)`, `site_code CHAR(2)` |
+| `CHAR(n)` | **n글자 고정 길이**로 저장하는 문자 (짧은 값도 받아서 뒤를 공백으로 채움) | `part_no CHAR(11)`, `uit CHAR(1)`, `site_code CHAR(2)` |
 | `VARCHAR(n)` | **최대 n글자**인 문자 | (6장 `reviewed_by VARCHAR(30)`) |
 | `TEXT` | 길이 제한 없는 문자 | `description`, `change_reason` |
 | `SMALLINT` / `INT` / `BIGINT` | 정수 (작은 / 보통 / 큰) | `status_code SMALLINT`, `plan_qty INT` |
@@ -318,7 +322,11 @@ ERROR:  new row for relation "m" violates check constraint "m_len_ck"
 DETAIL:  Failing row contains (ECP        ).
 ```
 
-(확인용 테이블 `m`은 바로 `DROP TABLE m;`으로 지웁니다.)
+확인용 테이블 `m`은 바로 지웁니다.
+
+```sql
+DROP TABLE m;
+```
 
 ### 2-4. VARCHAR(n)의 n은 바이트가 아니라 글자 수 {keep}
 
@@ -348,6 +356,9 @@ SELECT memo_id, writer, length(writer) AS len, octet_length(writer) AS bytes
 CREATE TABLE price_test ( price NUMERIC(5,2) );
 
 INSERT INTO price_test VALUES (123.456);
+```
+
+```sql
 INSERT INTO price_test VALUES (1234.5);
 ```
 
@@ -588,7 +599,7 @@ CTAS는 ==데이터와 컬럼(이름·자료형)만 복사==합니다. 사본에
 > 실행 전: `SET search_path TO lab, hr;` (HR 실습 데이터 `hr_postgres.sql`의 `hr` 스키마. 테이블은 `lab`에 만들어집니다.)
 
 :::try
-**[복습]** (기존 교안 `9. DDL.pptx` 20번) 아래 조건으로 회원 테이블 `member`를 만들고, 이름 없이 회원 한 명(`'kim01'`, 비밀번호 `'pw1234'`)을 넣었을 때 어떤 오류가 나는지 확인하세요. 그다음 이름 `'김생산'`, 성별 `'남'`으로 다시 넣으세요.
+**[복습]** 아래 조건으로 회원 테이블 `member`를 만들고, 이름 없이 회원 한 명(`'kim01'`, 비밀번호 `'pw1234'`)을 넣었을 때 어떤 오류가 나는지 확인하세요. 그다음 `'kim01'`을 이름 `'김생산'`, 성별 `'남'`으로 다시 넣으세요. 이번에는 이름과 성별만 넣습니다(비밀번호는 생략).
 
 | 컬럼 | 자료형 | 조건 |
 | --- | --- | --- |
@@ -633,7 +644,7 @@ SELECT * FROM member;
 | kim01 | 김생산 | NULL | NULL | 남 |
 ```
 
-기존 교안은 「12 BYTE」였지만, PostgreSQL의 `VARCHAR(12)`는 **12글자**까지 받습니다(2-4).
+PostgreSQL의 `VARCHAR(12)`는 12바이트가 아니라 **12글자**까지 받습니다(2-4).
 :::
 
 ### 2-7. 확인 문제 답 — 응용 {keep}
@@ -669,6 +680,8 @@ SELECT conrelid::regclass AS table_name, conname, contype
 | employees | emp_emp_id_pk | p |
 ```
 :::
+
+> 확인 문제를 마치면 `SET search_path TO lab, bom;`으로 돌아옵니다.
 
 ## 3. 제약조건 — 잘못된 데이터가 들어오지 못하게
 
@@ -706,7 +719,7 @@ insp_id  INT  CONSTRAINT inspection_pk PRIMARY KEY
 ALTER TABLE 테이블명 ADD CONSTRAINT 제약조건명 제약조건 (컬럼);
 ```
 
-- `CONSTRAINT 이름`을 생략하면 PostgreSQL이 이름을 자동으로 붙입니다(`part_master_pkey`, `part_master_uit_fkey` …). 오류 메시지에는 **제약조건 이름**이 나오므로, 직접 만드는 테이블은 ==「테이블_컬럼_종류」(예: `inspection_result_ck`)처럼 읽으면 뜻이 보이는 이름==을 붙입니다.
+- `CONSTRAINT 이름`을 생략하면 PostgreSQL이 이름을 자동으로 붙입니다(`part_master_pkey`, `part_master_uit_fkey` …). 오류 메시지에는 **제약조건 이름**이 나오므로, 직접 만드는 테이블은 ==「테이블_컬럼_종류」(예: `inspection_result_ck`)처럼 읽으면 뜻이 보이는 이름==을 붙입니다. PK처럼 테이블에 하나뿐인 것은 컬럼을 생략하기도 합니다(`inspection_pk`).
 - 이 교안의 접미사: `_pk`(기본키), `_uk`(유니크), `_ck`(체크), `_fk`(외래키)
 
 ### 3-3. 수입검사 테이블 만들기 {keep}
@@ -888,7 +901,7 @@ ERROR:  update or delete on table "vendor_copy" violates foreign key constraint 
 DETAIL:  Key (vendor_code)=(V1007) is still referenced from table "inspection".
 ```
 
-검사 기록(자식)이 남아 있는 업체(부모)를 지우면, 그 기록은 「존재하지 않는 업체의 검사 결과」가 됩니다. 이것이 **참조 무결성**입니다.
+검사 기록(자식)이 남아 있는 업체(부모)를 지우면, 그 기록은 「존재하지 않는 업체의 검사 결과」가 됩니다. 이것이 **참조 무결성**입니다. (`ON DELETE` 옵션을 따로 주지 않았을 때의 기본 동작입니다.)
 
 ### 3-5. 걸려 있는 제약조건 조회하기 {keep}
 
@@ -925,7 +938,7 @@ SELECT conname, contype, pg_get_constraintdef(oid) AS definition
 
 ### 3-6. 제약조건 = 데이터 품질 규칙 ⭐ {keep}
 
-Day 1~2에 쿼리로 찾아낸 「이상해 보이는 데이터」를, 이번에는 **규칙(제약조건)을 걸어서** 찾아봅니다. 원본을 건드리지 않도록 2-6에서 만든 **사본**에 겁니다.
+Day 1~3에 쿼리로 찾아낸 「이상해 보이는 데이터」를, 이번에는 **규칙(제약조건)을 걸어서** 찾아봅니다. 원본을 건드리지 않도록 2-6에서 만든 **사본**에 겁니다.
 
 ```icons 세 가지 규칙
 ruler | ① CHECK | 소요량은 0보다 커야 한다 | rose
@@ -1074,7 +1087,7 @@ ERROR:  check constraint "bom_wm_qty_ck" of relation "bom_wm" is violated by som
 > 실행 전: `SET search_path TO lab, hr;`
 
 :::try
-**[복습]** (기존 교안 `9. DDL.pptx` 21~22번) 블로그 테이블 `blog`를 아래 구조로 만들고, 제약조건 4개를 `ALTER TABLE ... ADD CONSTRAINT`로 추가하세요. 그다음 ① 성별이 `'M'`인 회원 `'lee02'`(이름 `'이품질'`), ② 없는 회원 `'park03'`의 글, ③ `'kim01'`의 글(1번, 제목 `'첫 글'`)을 차례로 넣어 결과를 확인하세요.
+**[복습]** (2-7에서 만든 `member` 테이블과 `'kim01'` 회원이 있어야 합니다.) 블로그 테이블 `blog`를 아래 구조로 만들고, 제약조건 4개를 `ALTER TABLE ... ADD CONSTRAINT`로 추가하세요. 그다음 ① 성별이 `'M'`인 회원 `'lee02'`(이름 `'이품질'`), ② 없는 회원 `'park03'`의 글, ③ `'kim01'`의 글(1번, 제목 `'첫 글'`)을 차례로 넣어 결과를 확인하세요.
 
 | 컬럼 | 자료형 | 조건 |
 | --- | --- | --- |
@@ -1190,6 +1203,8 @@ ALTER TABLE emp_copy ADD CONSTRAINT emp_copy_dept_fk FOREIGN KEY (department_id)
 
 두 문장 모두 성공합니다. 178번 Kimberely는 부서가 NULL이지만, **FK는 NULL을 검사하지 않습니다**(「부모를 가리키지 않음」으로 봄). 부서가 반드시 있어야 한다면 `department_id`에 `NOT NULL`을 따로 걸어야 합니다.
 :::
+
+> 확인 문제를 마치면 `SET search_path TO lab, bom;`으로 돌아옵니다.
 
 ## 4. ALTER TABLE — 만든 테이블 고치기
 
@@ -1447,6 +1462,8 @@ SELECT COUNT(*) AS cnt, MIN(bonus_pct) AS min_pct, MAX(bonus_pct) AS max_pct FRO
 ```
 :::
 
+> 확인 문제를 마치면 `SET search_path TO lab, bom;`으로 돌아옵니다.
+
 ## 5. DROP · TRUNCATE — 지우기
 
 ### 5-1. DROP TABLE — 테이블 통째로 삭제 {keep}
@@ -1531,7 +1548,7 @@ DROP TABLE IF EXISTS vendor_copy;
 NOTICE:  table "vendor_copy" does not exist, skipping
 ```
 
-`schema_postgres.sql` 맨 위의 `DROP SCHEMA IF EXISTS bom CASCADE;`도 같은 원리입니다. 스크립트를 몇 번 다시 실행해도 처음 실행에서 오류가 나지 않게 합니다.
+`schema_postgres.sql` 맨 위의 `DROP SCHEMA IF EXISTS bom CASCADE;`도 같은 원리입니다. 지울 대상이 아직 없는 첫 실행에서도 오류가 나지 않아, 스크립트를 몇 번이고 다시 실행할 수 있습니다.
 
 ### 5-2. TRUNCATE — 구조는 두고 데이터만 비우기 {keep}
 
@@ -1574,7 +1591,7 @@ SELECT column_name FROM information_schema.columns
 ### 5-2. 참조되는 테이블은 TRUNCATE도 막힘 {keep}
 
 :::error 참조되는 테이블은 TRUNCATE도 막힘
-5-1의 `CASCADE` 전, `vendor_copy`가 아직 참조되고 있을 때 실행한 결과입니다.
+지금은 실행하지 마세요(이미 지운 테이블입니다). 5-1에서 CASCADE 하기 전에 실행했다면 나오는 결과입니다.
 
 ```sql
 TRUNCATE TABLE vendor_copy;
@@ -1614,7 +1631,7 @@ SELECT COUNT(*) AS cnt_after_rollback FROM bom_wm;
 | 43 |
 ```
 
-`BEGIN`으로 시작한 묶음 안에서 비운 데이터는 `ROLLBACK`으로 43행이 그대로 돌아왔습니다. 단, PostgreSQL 클라이언트는 기본이 **자동 커밋**이라 `BEGIN` 없이 실행한 TRUNCATE는 그 즉시 확정됩니다. `BEGIN`·`ROLLBACK`은 TCL 단원에서 자세히 다룹니다.
+`BEGIN`으로 시작한 묶음 안에서 비운 데이터는 `ROLLBACK`으로 43행이 그대로 돌아왔습니다. 단, PostgreSQL 클라이언트는 보통 기본 설정이 **자동 커밋**이라 `BEGIN` 없이 실행한 TRUNCATE는 그 즉시 확정됩니다. `BEGIN`·`ROLLBACK`은 TCL 단원에서 자세히 다룹니다.
 
 ### 5-3. DELETE · TRUNCATE · DROP 비교 {keep}
 
@@ -1639,7 +1656,7 @@ SELECT COUNT(*) AS cnt_after_rollback FROM bom_wm;
 > 실행 전: `SET search_path TO lab, hr;`
 
 :::try
-**[복습]** 3-7·4-5에서 만든 `member`와 `blog`를 모두 지우려 합니다. `DROP TABLE member;`부터 실행하면 어떻게 되나요? `CASCADE` 없이 두 테이블을 지우는 순서를 쓰고, 이미 지워졌어도 오류가 나지 않도록 작성하세요.
+**[복습]** 2-7에서 만든 `member`와 3-7에서 만든 `blog`를 모두 지우려 합니다. `DROP TABLE member;`부터 실행하면 어떻게 되나요? `CASCADE` 없이 두 테이블을 지우는 순서를 쓰고, 이미 지워졌어도 오류가 나지 않도록 작성하세요.
 
 **[응용]** `emp_ship`을 `BEGIN`으로 묶어 `TRUNCATE`한 뒤, 묶음 안에서 행 수를 확인하고 `ROLLBACK`하세요. 묶음 밖에서 다시 확인한 행 수는?
 :::
@@ -1694,6 +1711,8 @@ SELECT COUNT(*) AS cnt_after FROM emp_ship;
 ```
 :::
 
+> 확인 문제를 마치면 `SET search_path TO lab, bom;`으로 돌아옵니다.
+
 ## 6. 판단 결과 기록 테이블 설계 — 결품 경고
 
 ### 6-1. 기존 이력 테이블 ① uit_change_history {keep}
@@ -1740,7 +1759,7 @@ Foreign-key constraints:
 | 기록을 구별하는 PK | `change_id` 있음 | **없음** |
 | 대상 품번이 실제로 있는지 (FK) | 있음 | 있음 |
 | 대상 품번이 비어 있지 않은지 (NOT NULL) | 없음 | 없음 |
-| 값의 범위 (CHECK) | 없음 — `line_type_updated`에 `Y`/`N` 외 값도 들어감 | 없음 |
+| 값의 범위 (CHECK) | 없음 — `line_type_updated`에 `Y`/`N` 외 값도 들어갈 수 있음 | 없음 |
 | 기록 시각 | `DATE`(날짜만) | `DATE`(날짜만) |
 | 누가 판단·변경했나 | 부서(`changed_by_dept`) | 없음 |
 
@@ -1931,7 +1950,7 @@ SELECT conrelid::regclass AS table_name, contype, COUNT(*) AS cnt
 > 실행 전: `SET search_path TO lab, bom;`
 
 :::try
-**[응용 · 도전]** (운영안 Day 4 도전 과제) 품질 점검 판단을 **AI 판단**과 **사람 최종 판단**으로 나눠 기록하는 `quality_judgment` 테이블을 만드세요.
+**[응용 · 도전]** 품질 점검 판단을 **AI 판단**과 **사람 최종 판단**으로 나눠 기록하는 `quality_judgment` 테이블을 만드세요. 표에 자료형이 없는 컬럼은 직접 정하세요(2-2 참고).
 
 | 컬럼 | 조건 |
 | --- | --- |
@@ -2014,7 +2033,7 @@ DETAIL:  Failing row contains (4, ECP39799101, SHORTAGE, NG, REVIEW, 2026-11-05 
 
 ### 7-0. 복습 문제 안내 {keep}
 
-> 범위: DDL 전체(CREATE · 자료형 · 제약조건 · ALTER · DROP · TRUNCATE · CTAS). 1번은 기존 복습문제(`09.DDL복습문제.txt`), 2~5번은 BOM 데이터입니다. 실행 전 `SET search_path TO lab, bom;`
+> 범위: DDL 전체(CREATE · 자료형 · 제약조건 · ALTER · DROP · TRUNCATE · CTAS). 1번은 회원정보 테이블, 2~5번은 BOM 데이터입니다. 실행 전 `SET search_path TO lab, bom;` 5번은 `lab` 스키마를 통째로 지우므로 **Day 4 실습이 모두 끝난 뒤에 실행**합니다.
 
 ```icons 다섯 문항
 users | 1 · CREATE · PK | 회원정보 테이블 TB_CUST | rose
@@ -2026,7 +2045,7 @@ trash-2 | 5 · DROP SCHEMA | lab 스키마 정리 | hot
 
 ### 7-1. 복습 1 {keep}
 
-**1.** (기존 복습문제 1~3) 회원정보 테이블 `TB_CUST`를 만드세요.
+**1.** 회원정보 테이블 `TB_CUST`를 만드세요.
 
 - 컬럼: `CUST_ID`(가변 문자 20글자), `PASSWD`(가변 문자 300글자), `CUST_NAME`(가변 문자 50글자)
 - `CUST_ID`, `PASSWD`는 NULL 불가, `CUST_NAME`은 NULL 가능
@@ -2092,7 +2111,7 @@ CHECK ((qty > (0)::numeric))
 
 ### 7-4. 복습 4 (심화) {keep}
 
-**4.** (심화) Day 2 품질 진단 리포트의 이상 항목을 기록할 `quality_issue` 테이블을 설계하세요.
+**4.** (심화) Day 2 품질 진단 리포트의 이상 항목을 기록할 `quality_issue` 테이블을 설계하세요. 자료형은 직접 정하세요(2-2 참고).
 
 | 컬럼 | 조건 |
 | --- | --- |
@@ -2117,9 +2136,9 @@ CHECK ((qty > (0)::numeric))
 
 ### 7-5. 복습 5 {keep}
 
-**5.** 실습을 마치고 `lab` 스키마에 만든 테이블을 확인한 뒤, `lab` 스키마를 통째로 지우세요. 원본 `bom` 스키마의 테이블 수가 그대로인지 확인합니다. [힌트: `information_schema.tables`, `DROP SCHEMA ... CASCADE`]
+**5.** **Day 4 실습이 모두 끝난 뒤에 실행하세요.** (`shortage_alert`는 Day 4 4교시·6교시에서 계속 씁니다.) 실습을 마치고 `lab` 스키마에 만든 테이블을 확인한 뒤, `lab` 스키마를 통째로 지우세요. 원본 `bom` 스키마의 테이블 수가 그대로인지 확인합니다. [힌트: `information_schema.tables`, `DROP SCHEMA ... CASCADE`]
 
-```result 출력 결과 — lab 스키마 테이블 (이 교안을 처음부터 순서대로 실행했다면 총 12행)
+```result 출력 결과 — lab 스키마 테이블 (본문과 확인 문제를 모두 순서대로 실행했다면 총 12행. 건너뛴 문제에 따라 달라집니다)
 bom_rf, bom_wm, emp_copy, emp_ship, incoming_insp, part_memo, plan_empty,
 quality_issue, quality_judgment, shortage_alert, sourcing_copy, tb_cust
 ```
@@ -2143,15 +2162,21 @@ CREATE TABLE tb_cust (
 ALTER TABLE tb_cust ADD CONSTRAINT pk_test PRIMARY KEY (cust_id);
 
 INSERT INTO tb_cust (cust_id, passwd) VALUES ('C0001', 'pass111');
-INSERT INTO tb_cust (cust_id, passwd, cust_name) VALUES ('C0001', 'pass222', 'pk설정했나');   -- 오류가 나야 정상
-INSERT INTO tb_cust (cust_id, passwd, cust_name) VALUES ('C0002', 'pass222', '고객2');
+```
 
-SELECT * FROM tb_cust ORDER BY cust_id;
+```sql
+INSERT INTO tb_cust (cust_id, passwd, cust_name) VALUES ('C0001', 'pass222', 'pk설정했나');   -- 오류가 나야 정상
 ```
 
 ```error
 ERROR:  duplicate key value violates unique constraint "pk_test"
 DETAIL:  Key (cust_id)=(C0001) already exists.
+```
+
+```sql
+INSERT INTO tb_cust (cust_id, passwd, cust_name) VALUES ('C0002', 'pass222', '고객2');
+
+SELECT * FROM tb_cust ORDER BY cust_id;
 ```
 
 ```sql 2
@@ -2171,7 +2196,7 @@ SELECT conname, contype
  ORDER BY contype, conname;
 ```
 
-- 1번: 기존 답안의 `VARCHAR2`는 PostgreSQL에서 `VARCHAR`입니다. 중복 오류 메시지에는 ==직접 붙인 제약조건 이름 `pk_test`가 그대로 나옵니다.== 이름을 붙이는 이유입니다(3-2). (대문자로 적은 `PK_TEST`도 소문자 `pk_test`로 바뀝니다 — 2-5.)
+- 1번: Oracle의 `VARCHAR2`는 PostgreSQL에서 `VARCHAR`로 씁니다. 중복 오류 메시지에는 ==직접 붙인 제약조건 이름 `pk_test`가 그대로 나옵니다.== 이름을 붙이는 이유입니다(3-2). (대문자로 적은 `PK_TEST`도 소문자 `pk_test`로 바뀝니다 — 2-5.)
 - 2번: 소요량 0인 행(bom_id 70)은 **세탁기** BOM(DD모터 → 나사 M4)에만 있어서, 냉장고 사본에는 CHECK가 바로 걸립니다. 「규칙을 걸 수 있는가」로 데이터 범위별 품질을 비교할 수 있습니다.
 :::
 
@@ -2219,18 +2244,22 @@ VALUES ('MFT43979901', 'MISSING_VALUE', 'part_sourcing.po_price가 NULL', '구�
 
 INSERT INTO quality_issue (part_no, issue_type, detail, owner_dept)
 VALUES ('FSC67181101', 'RULE_VIOLATION', 'bom_id 70 qty_per = 0', 'R&D');
+```
 
+```sql
 INSERT INTO quality_issue (part_no, issue_type, detail, owner_dept)
 VALUES ('FSC67181101', 'ZERO_QTY', 'bom_id 70 qty_per = 0', 'R&D');   -- 오류
-
-SELECT issue_id, part_no, issue_type, owner_dept, status, found_at = CURRENT_DATE AS today
-  FROM quality_issue
- ORDER BY issue_id;
 ```
 
 ```error
 ERROR:  new row for relation "quality_issue" violates check constraint "quality_issue_type_ck"
 DETAIL:  Failing row contains (3, FSC67181101, ZERO_QTY, bom_id 70 qty_per = 0, R&D, OPEN, 2026-11-05).
+```
+
+```sql
+SELECT issue_id, part_no, issue_type, owner_dept, status, found_at = CURRENT_DATE AS today
+  FROM quality_issue
+ ORDER BY issue_id;
 ```
 
 - 4번: `issue_type`처럼 값의 종류가 정해진 컬럼에 CHECK를 걸면, 사람마다 `'ZERO_QTY'`, `'zero qty'`, `'소요량0'`처럼 제각각 적어 **집계가 안 되는** 문제를 막을 수 있습니다(4단원 GROUP BY).
@@ -2270,7 +2299,7 @@ drop cascades to table quality_issue
 :::
 
 :::teacher 강사 확인
-- 5번은 HR 확인 문제의 테이블(`emp_ship`, `emp_copy`)까지 `lab`에 만들어졌다는 전제입니다. 확인 문제 일부를 건너뛰었다면 행 수가 12보다 적습니다.
+- 5번은 HR 확인 문제의 테이블(`emp_ship`, `emp_copy`)까지 `lab`에 만들어졌다는 전제입니다. 확인 문제 일부를 건너뛰었다면 행 수가 12와 다릅니다(5-4 복습을 건너뛰면 `member`·`blog`가 남아 더 많습니다).
 - 4번의 두 건은 README 4장 **A4**·**A5**입니다. 실제 Day 4 7교시 종합 미니 과제에서 이 테이블 구조를 그대로 써도 됩니다.
 :::
 
@@ -2291,7 +2320,7 @@ drop cascades to table quality_issue
 - **판단 기록 테이블**: 대상·판단값·근거·판단 주체·시각·상태를 컬럼으로 두고, 자동 번호(`IDENTITY`), 기본값(`now()`, `'PENDING'`), CHECK(판단 주체·상태·승인 조건)로 업무 규칙을 DB에 새깁니다.
 :::
 
-### 8-2. 확인 문제
+### 8-2. 한 줄 퀴즈
 
 :::quiz
 Q. `writer VARCHAR(20) DEFAULT '미지정'` 컬럼에 `INSERT … (writer) VALUES (NULL)`을 실행하면 무엇이 저장되나요?

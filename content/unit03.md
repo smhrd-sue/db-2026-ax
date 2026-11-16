@@ -36,7 +36,7 @@ WHERE part_no = 'ECP39799101';
 | 컴프레서 | D |
 ```
 
-> 1장 2-4에서 본 우아한형제들의 AI 데이터 분석가처럼, AI가 **자연어 질문을 SQL로 바꿔** DB에서 답을 꺼내는 일도 결국 이 문장을 만드는 일입니다. ==SQL을 읽을 줄 알아야 AI가 만든 SQL도 검증할 수 있습니다.==
+> 1장 1-4에서 본 우아한형제들의 AI 데이터 분석가처럼, AI가 **자연어 질문을 SQL로 바꿔** DB에서 답을 꺼내는 일도 결국 이 문장을 만드는 일입니다. ==SQL을 읽을 줄 알아야 AI가 만든 SQL도 검증할 수 있습니다.==
 
 ### 1-2. SQL 문법의 종류 {keep}
 
@@ -48,15 +48,14 @@ history | TCL · 트랜잭션 제어어 | 작업을 확정하거나 되돌림 | 
 lock | DCL · 데이터 제어어 | 권한을 주고 회수함 | rose | `GRANT` `REVOKE`
 ```
 
-> 기존 교안의 표현을 빌리면, **SELECT 문법만 잘 알아도 실무 SQL 쿼리의 대부분을 읽을 수 있습니다.** 
-오늘은 조회(QUERY)에만 집중합니다.
+> **SELECT 문법만 잘 알아도 실무 SQL 쿼리의 대부분을 읽을 수 있습니다.** 오늘은 조회(QUERY)에만 집중합니다.
 
 ### 1-3. SQL 작성 규칙 네 가지
 
 | # | 규칙 | 예 |
 | --- | --- | --- |
-| 1 | **대소문자를 구분하지 않습니다.** (키워드·테이블·컬럼 이름) | `SELECT PART_NO FROM PART_MASTER` <br>= `select part_no from part_master` |
-| 2 | 문장 끝에는 ==세미콜론 `;`== 을 붙입니다. <br>문장이 끝났다는 표시입니다. | `SELECT * FROM vendor;` |
+| 1 | **대소문자를 구분하지 않습니다.** (키워드·테이블·컬럼 이름) <br>단, 작은따옴표 안의 **값**은 구분합니다(`'D'` ≠ `'d'`). | `SELECT PART_NO FROM PART_MASTER` <br>= `select part_no from part_master` |
+| 2 | 문장 끝에는 ==세미콜론 `;`==을 붙입니다. <br>문장이 끝났다는 표시입니다. | `SELECT * FROM vendor;` |
 | 3 | 띄어쓰기·줄바꿈은 실행에 영향을 주지 않습니다. <br> → 읽기 좋게 줄을 나눠 씁니다. | 아래 「정석 SQL 문장」 |
 | 4 | 주석: 한 줄은 `--`, 여러 줄은 `/* … */` | `-- 이 줄은 실행되지 않습니다` |
 
@@ -85,7 +84,7 @@ SELECT part_no
 ### 1-3. 작은따옴표 vs 큰따옴표 {keep}
 
 :::error
-값(문자열)은 ==작은따옴표 `'D'`==, 이름(식별자)은 큰따옴표 `"…"` 입니다. 값을 큰따옴표로 감싸면 PostgreSQL은 **컬럼 이름**으로 알아듣습니다.
+값(문자열)은 ==작은따옴표 `'D'`==, 이름(식별자)은 큰따옴표 `"…"`입니다. 값을 큰따옴표로 감싸면 PostgreSQL은 **컬럼 이름**으로 알아듣습니다.
 
 ```sql
 SELECT part_no FROM part_master WHERE uit = "D";
@@ -104,6 +103,8 @@ ERROR:  column "D" does not exist
 | **스크립트 전체** 또는 **드래그한 부분** 실행 | **F5** (Execute script) |
 | 선택한 줄 주석 처리 / 해제 | Ctrl + / |
 
+> Alt + F5가 동작하지 않으면 실행할 문장을 **드래그한 뒤 F5**를 누릅니다.
+
 :::teacher 강사 확인
 - 위 단축키는 pgAdmin 최신 문서 기준입니다. 수업 PC에 설치된 pgAdmin 버전에서 Alt + F5가 동작하는지 미리 확인하세요.
 - 2장에서는 「F5 또는 ▶」로 안내했습니다. 여러 문장을 한 창에 쓰고 하나씩 실행하는 실습이 많으므로 Alt + F5(또는 드래그 후 F5)를 이 시간에 정리해 주세요.
@@ -118,7 +119,7 @@ ERROR:  column "D" does not exist
 | ① psql 메타 명령 | SQL Shell (psql) | `\d part_master` |
 | ② 왼쪽 트리 | pgAdmin | `bom_lab > Schemas > bom > Tables > part_master > Columns` 펼치기 |
 
-> `\d`는 2장에서 배운 **psql 메타 명령**이라 pgAdmin Query Tool에서는 실행되지 않습니다.
+> `\d`는 2장에서 배운 **psql 메타 명령**이라 pgAdmin Query Tool에서는 실행되지 않습니다. psql에서 테이블을 찾지 못하면 `\d bom.part_master`처럼 스키마 이름을 붙입니다.
 
 ### 1-5. \d part_master 결과 {keep}
 
@@ -126,7 +127,7 @@ ERROR:  column "D" does not exist
 \d part_master
 ```
 
-```screen 결과 아래쪽에는 PK·FK 목록도 나옵니다(1장 8-4 FK 정리표와 같은 내용).
+```screen 결과 아래쪽에는 PK·FK 목록도 나옵니다(1장 7-4 FK 정리표와 같은 내용).
                      Table "bom.part_master"
      Column      |     Type      | Collation | Nullable | Default
 -----------------+---------------+-----------+----------+---------
@@ -159,9 +160,9 @@ calendar~ivory | 날짜 | `date` | `created_at`
 > 실행 전: `SET search_path TO hr;` (HR 실습 데이터 `hr_postgres.sql`의 `hr` 스키마)
 
 :::try
-**[복습]** `employees` 테이블의 구조를 확인한 뒤, 직원ID가 100인 직원의 `employee_id`, `first_name`, `last_name`, `hire_date`를 조회하세요.
+**[복습]** `employees` 테이블의 구조를 확인한 뒤, 직원ID가 100인 직원의 `employee_id`, `first_name`, `last_name`, `hire_date`를 조회하세요. (1-1 예제처럼 `WHERE employee_id = 100`을 붙입니다.)
 
-**[응용]** 아래 쿼리는 성(`last_name`)이 King인 직원을 찾으려 했지만 오류가 납니다. 오류 메시지를 읽고 원인을 설명한 뒤, 고쳐서 실행하세요. (이름 순 정렬)
+**[응용]** 아래 쿼리는 성(`last_name`)이 King인 직원을 찾으려 했지만 오류가 납니다. 오류 메시지를 읽고 원인을 설명한 뒤, 고쳐서 실행하세요. (끝에 `ORDER BY first_name`을 붙이면 이름 순으로 정렬됩니다 — 3절에서 배웁니다.)
 
 ```sql
 SELECT first_name, last_name FROM employees WHERE last_name = "King";
@@ -171,7 +172,7 @@ SELECT first_name, last_name FROM employees WHERE last_name = "King";
 ### 1-6. 확인 문제 답 — 복습 {keep}
 
 :::answer [복습] 예시 답안
-psql에서는 `\d employees`, pgAdmin에서는 `hr > Tables > employees > Columns`로 구조를 확인합니다.
+psql에서는 `\d hr.employees`, pgAdmin에서는 `hr > Tables > employees > Columns`로 구조를 확인합니다.
 
 ```sql
 SELECT employee_id, first_name, last_name, hire_date
@@ -205,6 +206,8 @@ SELECT first_name, last_name
 | Steven | King |
 ```
 :::
+
+> 확인 문제를 마치면 `SET search_path TO bom;`으로 돌아옵니다.
 
 ## 2. SELECT — 원하는 열(컬럼) 꺼내기
 
@@ -283,7 +286,7 @@ SELECT part_no
   FROM part_master;
 ```
 
-```result 앞 5행
+```result 결과 일부 (순서는 다를 수 있음)
 | part_no | description_kr | uom | uit |
 | --- | --- | --- | --- |
 | FSC67181101 | 나사 M4x12 | EA | G |
@@ -298,7 +301,7 @@ SELECT part_no
 
 ### 2-4. 중복 제거 — `DISTINCT` {keep}
 
-`part_master`의 `uit` 컬럼은 68행입니다. 어떤 UIT 값이 **몇 종류** 쓰이고 있을까요?
+`part_master`는 68행입니다. 이 가운데 `uit` 값은 **몇 종류** 쓰이고 있을까요?
 
 :::cols
 ```sql
@@ -320,8 +323,7 @@ SELECT DISTINCT uit
 ```
 :::
 
-- 68행 → **7행**. `code_uit`에는 코드가 11개 있지만, 실제 부품에는 7개만 쓰이고 있다는 뜻입니다. 
-(C, Q, M, R은 이 데이터에서 쓰이지 않음)
+- 68행 → **7행**. `code_uit`에는 코드가 11개 있지만, 실제 부품에는 7개만 쓰이고 있다는 뜻입니다. (C, Q, M, R은 이 데이터에서 쓰이지 않음)
 
 ### 2-4. 여러 컬럼에 DISTINCT {keep}
 
@@ -346,7 +348,7 @@ SELECT DISTINCT class_lv1, uit
 ```
 :::
 
-> 정렬 없이 `SELECT DISTINCT uit FROM part_master;`만 실행하면 결과 순서가 섞여 나옵니다(검증 환경에서는 X, S, D, P, T, G, F 순). 순서가 필요하면 반드시 `ORDER BY`를 붙입니다.
+> 정렬 없이 `SELECT DISTINCT uit FROM part_master;`만 실행하면 결과 순서가 섞여 나옵니다(예: X, S, D, P, T, G, F 순). 순서가 필요하면 반드시 `ORDER BY`를 붙입니다.
 
 ### 2-5. SELECT 절에서 계산하기 — 산술 연산 {keep}
 
@@ -372,14 +374,14 @@ SELECT part_no
 | RSS86949501 | 42.00 | 20 | 840.00 | 45 | 6 |
 ```
 
-(`WHERE … IN`은 5장에서 배웁니다. 지금은 “세 품번만 골랐다”고 읽으면 됩니다.)
+(`WHERE … IN`은 5-2에서 배웁니다. 지금은 “세 품번만 골랐다”고 읽으면 됩니다.)
 
 - 계산한 컬럼은 이름이 없어 `?column?`으로 나옵니다 → 2-6 **별칭**으로 해결합니다.
 - 이 세 품번은 통화가 `USD`이므로 `po_price * moq`도 달러 금액입니다.
 
 ### 2-5. 정수 ÷ 정수 = 몫만 남습니다 {keep}
 
-:::error 정수 ÷ 정수 = 몫만 남습니다
+:::error
 `lead_time_days`(정수) / `7`(정수)은 **소수점 아래를 버립니다.** 50일 ÷ 7 = 7.14…가 아니라 `7`입니다.
 
 ```sql
@@ -467,16 +469,16 @@ SELECT part_no, po_price * moq AS min_order_amt
 ERROR:  column "min_order_amt" does not exist
 ```
 
-`WHERE`(2번째)가 `SELECT`(5번째)보다 **먼저 실행**되므로, `WHERE`를 실행하는 시점에는 별칭이 아직 없습니다. 반대로 `ORDER BY`(6번째)는 `SELECT` 뒤에 실행되므로 별칭을 쓸 수 있습니다(3-1).
+`WHERE`가 `SELECT`보다 **먼저 실행**되므로, `WHERE`를 실행하는 시점에는 별칭이 아직 없습니다. 반대로 `ORDER BY`는 `SELECT` 뒤에 실행되므로 별칭을 쓸 수 있습니다(3-1).
 
 ### 2-7. 확인 문제 — HR 데이터 {keep}
 
 > 실행 전: `SET search_path TO hr;` (HR 실습 데이터 `hr_postgres.sql`의 `hr` 스키마)
 
 :::try
-**[복습]** `employees`에서 직원들이 맡고 있는 직책(`job_id`)이 **몇 종류**인지 중복 없이, 알파벳 순으로 조회하세요.
+**[복습]** `employees`에서 직원들이 맡고 있는 직책(`job_id`)이 **몇 종류**인지 중복 없이, 알파벳 순으로 조회하세요. (2-4 예제처럼 끝에 `ORDER BY job_id`를 붙입니다.)
 
-**[응용]** 부서ID가 60인 직원의 `employee_id`, `first_name`, `salary`와 함께 **연봉**(급여 × 12)과 **10% 인상 후 급여**를 출력하세요. 연봉은 `annual_salary`, 인상 후 급여는 `인상 후 급여`라는 별칭을 사용합니다. (WHERE는 4장에서 배우지만, `WHERE department_id = 60` 한 줄만 붙이면 됩니다.)
+**[응용]** 부서ID가 60인 직원의 `employee_id`, `first_name`, `salary`와 함께 **연봉**(급여 × 12)과 **10% 인상 후 급여**를 출력하세요. 연봉은 `annual_salary`, 인상 후 급여는 `인상 후 급여`라는 별칭을 사용합니다. (WHERE는 4절에서 배우지만, `WHERE department_id = 60` 한 줄만 붙이면 됩니다.)
 :::
 
 ### 2-7. 확인 문제 답 — 복습 {keep}
@@ -528,6 +530,8 @@ SELECT employee_id
 ```
 :::
 
+> 확인 문제를 마치면 `SET search_path TO bom;`으로 돌아옵니다.
+
 ## 3. ORDER BY · LIMIT — 정렬하고, 몇 개만 보기
 
 ### 3-1. ORDER BY — 정렬 {keep}
@@ -537,14 +541,16 @@ SELECT employee_id
 | `ASC` (Ascending) | 오름차순 1, 2, 3 … / A → Z / 과거 → 최근 | **기본값** (생략하면 ASC) |
 | `DESC` (Descending) | 내림차순 … 3, 2, 1 / Z → A / 최근 → 과거 | |
 
-- `ORDER BY`는 SQL 문장의 **맨 마지막에 쓰고, 맨 마지막에 실행**됩니다.
+- `ORDER BY`는 `SELECT … FROM … WHERE` **뒤에 쓰고**, `SELECT`보다 **나중에 실행**됩니다.
 
 ```sql
 SELECT part_no, description_kr, created_at
   FROM part_master
- ORDER BY created_at DESC
+ ORDER BY created_at DESC, part_no
  LIMIT 5;
 ```
+
+(`LIMIT 5`는 정렬한 뒤 앞 5행만 남깁니다 — 3-2에서 배웁니다. 등록일이 같으면 품번 순입니다.)
 
 ```result
 | part_no | description_kr | created_at |
@@ -659,7 +665,7 @@ SELECT part_no, po_price, moq, po_price * moq AS min_order_amt
 | MHS18920401 | 1900.00 | 1 | 1900.00 |
 ```
 
-`MFT43979901`(정수 필터)는 단가가 비어 있어 계산 결과도 비었습니다. ==“단가가 0원”이 아니라 “단가를 모른다”== 입니다.
+`MFT43979901`(정수 필터)는 단가가 비어 있어 계산 결과도 비었습니다. ==“단가가 0원”이 아니라 “단가를 모른다”==입니다.
 
 :::teacher 강사 확인
 - `MFT43979901`의 단가 NULL은 README 4장의 심어 둔 이상 데이터 **A4**입니다. 운영안은 7교시에 「단가 NULL 부품 찾기(A4)」를 실습으로 두고 있으므로, 여기서는 “NULL과 연산하면 NULL”만 보여 주고 원인·영향 해석은 7교시로 넘기세요.
@@ -687,6 +693,8 @@ SELECT part_no, description_kr, svc_code
 | EMT73633001 | 스테이터 | NULL |
 | EMT78269001 | 로터 | NULL |
 ```
+
+(`IN`은 5-2에서 배웁니다. 지금은 “EBA·EMT 두 분류만 골랐다”고 읽으면 됩니다.)
 
 ### 3-4. NULLS FIRST · NULLS LAST {keep}
 
@@ -749,6 +757,8 @@ SELECT employee_id, first_name, last_name, commission_pct
 | 158 | Allan | McEwen | 0.35 |
 ```
 :::
+
+> 확인 문제를 마치면 `SET search_path TO bom;`으로 돌아옵니다.
 
 ## 4. WHERE — 원하는 행(로우) 고르기
 
@@ -823,7 +833,7 @@ SELECT part_no, description_kr, uit
 SELECT part_no, vendor_code, lead_time_days
   FROM part_sourcing
  WHERE lead_time_days >= 40
- ORDER BY lead_time_days DESC;
+ ORDER BY lead_time_days DESC, part_no;
 ```
 
 ```result
@@ -831,8 +841,8 @@ SELECT part_no, vendor_code, lead_time_days
 | --- | --- | --- |
 | EIC93178801 | V1005 | 60 |
 | ECP39799101 | V1004 | 50 |
-| RSS86949501 | V1007 | 45 |
 | MGL96663301 | V1007 | 45 |
+| RSS86949501 | V1007 | 45 |
 | EFN66589301 | V1009 | 40 |
 ```
 :::
@@ -846,15 +856,15 @@ SELECT part_no, vendor_code, lead_time_days
 SELECT part_no, description_kr, created_at
   FROM part_master
  WHERE created_at >= '2025-12-01'
- ORDER BY created_at;
+ ORDER BY created_at, part_no;
 ```
 
 ```result
 | part_no | description_kr | created_at |
 | --- | --- | --- |
 | MCB74311201 | 외함 캐비닛 | 2025-12-08 |
-| RPP53183301 | PP 수지 | 2025-12-10 |
 | AHD26818801 | 핸들 조립체 | 2025-12-10 |
+| RPP53183301 | PP 수지 | 2025-12-10 |
 | MDR41841501 | 내조 드럼 | 2025-12-14 |
 | EMT73633001 | 스테이터 | 2025-12-23 |
 | MGL96663301 | 도어 글라스 | 2025-12-25 |
@@ -864,7 +874,7 @@ SELECT part_no, description_kr, created_at
 
 ### 4-2. 날짜는 꼭 '연-월-일' 순서로 {keep}
 
-:::error 날짜는 꼭 '연-월-일' 순서로
+:::error
 `'05/12/31'`처럼 연도를 두 자리로 짧게 쓰면 **전혀 다른 날짜**로 읽힐 수 있습니다.
 
 ```sql
@@ -877,7 +887,7 @@ SELECT '05/12/31'::date AS d;   -- ::date = 날짜로 바꾸기
 | 2031-05-12 |
 ```
 
-2005년 12월 31일이 아니라 **2031년 5월 12일**로 읽혔습니다(월/일/연 순서). ==날짜는 항상 `'2005-12-31'`처럼 연-월-일 4자리 연도로== 씁니다.
+2005년 12월 31일이 아니라 **2031년 5월 12일**로 읽혔습니다(월/일/연 순서). 서버 설정에 따라 또 다르게 읽힐 수도 있어 더 위험합니다. ==날짜는 항상 `'2005-12-31'`처럼 연-월-일 4자리 연도로== 씁니다.
 :::
 
 :::teacher 강사 확인
@@ -981,9 +991,11 @@ SELECT part_no, description_kr, uit, class_lv1
    AND class_lv1 = 'E';
 ```
 
-→ **16행**, 모두 `class_lv1 = 'E'`. ==OR와 AND를 함께 쓸 때는 항상 괄호==를 칩니다. (5장의 `IN`을 쓰면 `uit IN ('D', 'G')`로 더 짧게 쓸 수 있습니다.)
+→ **16행**, 모두 `class_lv1 = 'E'`. ==OR와 AND를 함께 쓸 때는 항상 괄호==를 칩니다. (5-2의 `IN`을 쓰면 `uit IN ('D', 'G')`로 더 짧게 쓸 수 있습니다.)
 
 ### [직접 해 보기] 4교시 {keep}
+
+> `bom` 스키마의 테이블로 풉니다. 실행 전: `SET search_path TO bom;`
 
 :::try
 1. `vendor`에서 **국내 협력사**(`is_domestic = 'Y'`)의 코드·이름·주요 품목을 조회하세요.
@@ -1096,6 +1108,8 @@ SELECT employee_id, first_name, job_id, hire_date
 ```
 :::
 
+> 확인 문제를 마치면 `SET search_path TO bom;`으로 돌아옵니다.
+
 # WHERE(조건 심화)
 
 ## 5. SQL 연산자
@@ -1198,7 +1212,9 @@ SELECT part_no, description_kr, uit
 
 ### 5-2. IN과 NULL — 함정 두 가지 {keep}
 
-:::error IN과 NULL — 함정 두 가지
+> `count(*)`는 **행 수를 세는** 함수입니다(6교시에서 배웁니다). 지금은 “몇 행인지”만 보면 됩니다.
+
+:::error
 **① `IN`으로는 NULL을 찾을 수 없습니다.** 목록에 NULL을 넣어도 NULL인 행은 나오지 않습니다.
 
 ```sql
@@ -1284,7 +1300,7 @@ SELECT plan_date, line_code, model_part_no, plan_qty
 
 ### 5-4. ① 분류코드 접두어로 찾기 {keep}
 
-품번 11자리 중 앞 3자리가 분류코드입니다(README 1장). (운영안 5H)
+품번 11자리 중 앞 3자리가 분류코드입니다(README 1장).
 
 :::cols
 ```sql
@@ -1303,7 +1319,7 @@ SELECT part_no, description, description_kr
 ```
 :::
 
-> 이 데이터에서는 `class_lv2` 값이 품번 앞 3자리와 모두 같습니다(68행 전체 확인). 그래서 `WHERE class_lv2 = 'EMT'`로도 같은 결과가 나옵니다.
+> 이 데이터에서는 `class_lv2` 값이 품번 앞 3자리와 모두 같습니다. 그래서 `WHERE class_lv2 = 'EMT'`로도 같은 결과가 나옵니다.
 
 ### 5-4. ② Description 규칙으로 찾기 {keep}
 
@@ -1372,7 +1388,7 @@ SELECT part_no, description_kr
 
 ### 5-4. LIKE는 대소문자를 구분합니다 → ILIKE {keep}
 
-:::error LIKE는 대소문자를 구분합니다 → ILIKE
+:::error
 ```sql
 SELECT count(*) FROM part_master WHERE description LIKE  '%assembly%';   -- 0
 SELECT count(*) FROM part_master WHERE description ILIKE '%assembly%';   -- 19
@@ -1382,7 +1398,7 @@ SELECT count(*) FROM part_master WHERE description ILIKE '%assembly%';   -- 19
 :::
 
 :::try 생각해 보기
-`description LIKE '%Assembly%'`(19행)에는 `Stator Assembly`(스테이터), `Shelf Assembly`(선반)처럼 이름은 Assembly지만 **UIT가 G(국내 구매품)** 인 부품도 섞여 있습니다. “이름에 Assembly가 있다”와 “사내에서 조립한다”는 같은 말일까요? → 복습 문제 6번에서 확인합니다.
+`description LIKE '%Assembly%'`(19행)에는 `Stator Assembly`(스테이터), `Shelf Assembly`(선반)처럼 이름은 Assembly지만 **UIT가 G(국내 구매품)** 인 부품도 섞여 있습니다. “이름에 Assembly가 있다”와 “사내에서 조립한다”는 같은 말일까요? → 7절 복습 문제 6번(7-3)에서 확인합니다.
 :::
 
 ### 5-5. 확인 문제 — HR 데이터 {keep}
@@ -1390,7 +1406,7 @@ SELECT count(*) FROM part_master WHERE description ILIKE '%assembly%';   -- 19
 > 실행 전: `SET search_path TO hr;` (HR 실습 데이터 `hr_postgres.sql`의 `hr` 스키마)
 
 :::try
-**[복습]** 전화번호(`phone_number`)가 `515`로 시작하고 급여가 10000 ~ 20000 사이인 직원의 `employee_id`, `first_name`, `phone_number`, `salary`를 급여가 높은 순으로 조회하세요.
+**[복습]** 전화번호(`phone_number`)가 `515`로 시작하고 급여가 10000 ~ 20000 사이인 직원의 `employee_id`, `first_name`, `phone_number`, `salary`를 급여가 높은 순(같으면 직원ID 순)으로 조회하세요.
 
 **[응용]** 인사팀이 “부서 50(Shipping)·80(Sales)이 **아닌** 직원 수”를 물었습니다. 아래 두 쿼리를 실행해 결과가 왜 다른지 설명하고, 인사팀 질문에 맞는 쿼리는 어느 쪽인지 고르세요.
 
@@ -1410,17 +1426,17 @@ SELECT employee_id, first_name, phone_number, salary
   FROM employees
  WHERE phone_number LIKE '515%'
    AND salary BETWEEN 10000 AND 20000
- ORDER BY salary DESC;
+ ORDER BY salary DESC, employee_id;
 ```
 
 ```result
 | employee_id | first_name | phone_number | salary |
 | --- | --- | --- | --- |
-| 102 | Lex | 515.123.4569 | 17000.00 |
 | 101 | Neena | 515.123.4568 | 17000.00 |
+| 102 | Lex | 515.123.4569 | 17000.00 |
 | 201 | Michael | 515.123.5555 | 13000.00 |
-| 205 | Shelley | 515.123.8080 | 12008.00 |
 | 108 | Nancy | 515.124.4569 | 12008.00 |
+| 205 | Shelley | 515.123.8080 | 12008.00 |
 | 114 | Den | 515.127.4561 | 11000.00 |
 | 204 | Hermann | 515.123.8888 | 10000.00 |
 ```
@@ -1444,11 +1460,13 @@ SELECT employee_id, first_name, last_name, department_id
 ```
 :::
 
+> 확인 문제를 마치면 `SET search_path TO bom;`으로 돌아옵니다.
+
 ## 6. CASE WHEN — 조건에 따라 라벨 붙이기
 
 ### 6-0. WHERE와 CASE는 무엇이 다를까? {keep}
 
-`WHERE`는 **행을 고르는** 것이고, `CASE`는 행마다 **새 값을 만들어** 컬럼으로 붙이는 것입니다. (운영안 5H)
+`WHERE`는 **행을 고르는** 것이고, `CASE`는 행마다 **새 값을 만들어** 컬럼으로 붙이는 것입니다.
 
 ```text
 CASE WHEN 조건1 THEN 값1
@@ -1547,7 +1565,7 @@ SELECT vendor_code
  ORDER BY vendor_code;
 ```
 
-→ 12행: 국내 8 · 해외 4. 6교시에서 이 라벨로 `GROUP BY`하면 운영안의 「국내/해외 업체 비율」을 바로 구할 수 있습니다.
+→ 12행: 국내 8 · 해외 4. 6교시에서 이 라벨로 `GROUP BY`하면 국내/해외 협력사 비율을 바로 구할 수 있습니다.
 
 ### 6-4. 확인 문제 — HR 데이터 {keep}
 
@@ -1619,11 +1637,13 @@ SELECT employee_id
 ```
 :::
 
+> 확인 문제를 마치면 `SET search_path TO bom;`으로 돌아옵니다.
+
 ## 7. 복습 문제
 
 ### 7-0. 복습 문제 안내 {keep}
 
-> 범위: SELECT · ORDER BY · LIMIT · WHERE 전체 · CASE. `bom` 스키마의 테이블로 풀어 주세요. (출력 순서는 `ORDER BY` 기준)
+> 범위: SELECT · ORDER BY · LIMIT · WHERE 전체 · CASE. `bom` 스키마의 테이블로 풀어 주세요(실행 전: `SET search_path TO bom;`). (출력 순서는 `ORDER BY` 기준)
 
 ```icons 여섯 문항
 search | 1 · LIKE + AND | M으로 시작하는 수입 구매품 | rose
@@ -1671,7 +1691,7 @@ tag | 6 · (심화) LIKE·괄호·CASE | 이름은 Assembly인데 구매품 | ho
 | EHN86058201 | V1011 | 10200.00 | 14 |
 ```
 
-**4.** `vendor`에서 국가가 CN, TW, VN인 협력사의 `vendor_code`, `vendor_name`, `country`, `main_item`을 출력하세요. [힌트: IN]
+**4.** `vendor`에서 국가가 CN, TW, VN인 협력사의 `vendor_code`, `vendor_name`, `country`, `main_item`을 협력사 코드 순으로 출력하세요. [힌트: IN]
 
 ```result 출력 결과 (총 3행)
 | vendor_code | vendor_name | country | main_item |
@@ -1683,7 +1703,7 @@ tag | 6 · (심화) LIKE·괄호·CASE | 이름은 Assembly인데 구매품 | ho
 
 ### 7-3. 복습 5 · 6 (심화) {keep}
 
-**5.** (심화) `production_plan`에서 LINE-A의 2026-12-08 ~ 2026-12-11 계획 중 계획 수량이 450 이상인 날의 `plan_date`, `line_code`, `plan_qty`를 출력하세요.
+**5.** (심화) `production_plan`에서 LINE-A의 2026-12-08 ~ 2026-12-11 계획 중 계획 수량이 450 이상인 날의 `plan_date`, `line_code`, `plan_qty`를 계획일 순으로 출력하세요.
 
 ```result 출력 결과 (총 2행)
 | plan_date | line_code | plan_qty |
@@ -1692,7 +1712,7 @@ tag | 6 · (심화) LIKE·괄호·CASE | 이름은 Assembly인데 구매품 | ho
 | 2026-12-11 | LINE-A | 460 |
 ```
 
-**6.** (심화) `part_master`에서 영문 품명(`description`)에 'Assembly'가 들어가는데 UIT가 G 또는 D인(= 구매품) 부품의 `part_no`, `description`, `uit`와 CASE로 만든 `make_buy` 라벨을 품번 순으로 출력하세요. [힌트: LIKE, 괄호, CASE]
+**6.** (심화) `part_master`에서 영문 품명(`description`)에 'Assembly'가 들어가는데 UIT가 G 또는 D인(국내·수입 구매품) 부품의 `part_no`, `description`, `uit`와 CASE로 만든 `make_buy` 라벨을 품번 순으로 출력하세요. [힌트: LIKE, 괄호, CASE]
 
 ```result 출력 결과 (총 8행)
 | part_no | description | uit | make_buy |
@@ -1787,7 +1807,7 @@ SELECT part_no
 - **CASE WHEN**: 조건에 따라 Make/Buy, 전자/기구, 국내/해외 같은 **라벨 컬럼**을 만듭니다.
 :::
 
-### 8-2. 확인 문제
+### 8-2. 마무리 퀴즈
 
 :::quiz
 Q. `SELECT part_no, po_price * moq AS amt FROM part_sourcing WHERE amt > 1000;`이 오류가 나는 이유는?
