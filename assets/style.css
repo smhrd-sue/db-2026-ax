@@ -726,3 +726,27 @@ body.slides-page { margin: 0; background: #2A1420; overflow: hidden; }
 /* class="lead" — 가운데 정렬한 큰 결론 문장 (원고 HTML에서 쓰기) */
 .lead { text-align: center; font-size: 1.15em; font-weight: 600; line-height: 1.6; margin: 18px auto; }
 .slides-page .lead { font-size: 28px; }
+
+/* 강사 소개 — 목차 위 작은 버튼 + 팝업 */
+.instructor-open { margin: 14px 0 0; }
+.instructor-open .home-link { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font: inherit; font-size: 14px; }
+.instructor-open .home-link svg { width: 16px; height: 16px; }
+.instructor-dlg { width: min(680px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); color: var(--text); box-shadow: 0 20px 60px rgba(42,20,32,.25); }
+.instructor-dlg::backdrop { background: rgba(42,20,32,.45); }
+.instructor-inner { padding: 22px 26px 26px; font-size: 15.5px; line-height: 1.65; }
+.instructor-inner > header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 14px; }
+.instructor-inner h2 { margin: 2px 0 0; font-size: 26px; color: var(--plum); letter-spacing: -0.01em; }
+.instructor-role { margin: 0; color: var(--muted); font-size: 14px; }
+.instructor-x { border: 1px solid var(--line); background: var(--paper); border-radius: 8px; width: 34px; height: 34px; display: grid; place-items: center; cursor: pointer; color: var(--text); flex: none; }
+.instructor-x svg { width: 18px; height: 18px; }
+.instructor-inner p { margin: 10px 0; }
+.instructor-inner ul { margin: 4px 0 10px; padding-left: 20px; }
+.instructor-inner li { margin: 3px 0; }
+.instructor-inner .stats { margin: 14px 0; }
+.instructor-inner .stats ul { padding-left: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.instructor-inner .stat { padding: 8px 12px; gap: 10px; }
+.instructor-inner .stat .picto-ic { width: 36px; height: 36px; }
+.instructor-inner .stat .picto-ic > svg { width: 18px; height: 18px; }
+.instructor-inner .stat b { font-size: 1.25em; }
+.instructor-inner .stat span { font-size: .85em; }
+@media (max-width: 600px) { .instructor-inner { padding: 18px 16px 20px; } .instructor-inner h2 { font-size: 22px; } }

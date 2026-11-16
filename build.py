@@ -810,6 +810,22 @@ def build_indexes(course, days):
             groups.append('<section class="subject-group"><h2>%s</h2><ul class="day-cards">%s</ul></section>' % (esc(g["name"]), "".join(items)))
         return "".join(groups)
 
+    # 강사 소개: instructor.md 가 있으면 목차 맨 위에 작은 버튼과 팝업을 붙인다.
+    instructor = ""
+    ins_file = ROOT / "instructor.md"
+    if ins_file.exists():
+        ins_meta, ins_text = read_front_matter(ins_file.read_text(encoding="utf-8"))
+        ins_body = "".join(render_block(b) for b in parse_blocks(ins_text))
+        instructor = (
+            '<p class="instructor-open"><button type="button" class="home-link" '
+            'onclick="document.getElementById(\'instructor\').showModal()">%s강사 소개</button></p>'
+            '<dialog id="instructor" class="instructor-dlg" aria-labelledby="instructor-name" '
+            'onclick="if(event.target===this)this.close()"><div class="instructor-inner">'
+            '<header><div><p class="instructor-role">%s</p><h2 id="instructor-name">%s</h2></div>'
+            '<button type="button" class="instructor-x" aria-label="닫기" onclick="this.closest(\'dialog\').close()">%s</button></header>'
+            '%s</div></dialog>') % (icon_svg("user-round"), esc(ins_meta.get("role", "")), esc(ins_meta.get("name", "")),
+                                    icon_svg("x"), ins_body)
+
     for depth, target, title, lead in (
         (0, DIST / "index.html", course["title"], '단원을 눌러 교재를 엽니다. <a href="slides/index.html">슬라이드 목록으로 가기</a>'),
         (1, DIST / "slides" / "index.html", course["title"] + " — 슬라이드",
@@ -817,9 +833,9 @@ def build_indexes(course, days):
     ):
         page = head(title, depth)
         page += ('<body class="index-page"><main class="content"><header class="course-hero"><p class="day-meta">%s</p>'
-                 '<h1>%s</h1><p>%s</p><div class="tt-swatch"><i></i><i></i><i></i><i></i></div></header>%s'
+                 '<h1>%s</h1><p>%s</p>%s<div class="tt-swatch"><i></i><i></i><i></i><i></i></div></header>%s'
                  '<footer class="page-foot"><p>%s</p></footer></main></body></html>') % (
-            esc(course["meta"]), esc(title), lead, cards(target), esc(course["meta"]))
+            esc(course["meta"]), esc(title), lead, instructor, cards(target), esc(course["meta"]))
         target.write_text(page, encoding="utf-8")
 
 
