@@ -442,183 +442,174 @@ ALTER DATABASE bom_lab SET search_path TO bom, public;
 - README 3장 안내대로, `exercises_mysql.sql`을 PostgreSQL에서 쓸 때는 `bom.` 접두사를 붙이거나 search_path를 설정해야 합니다.
 :::
 
-### 7-4. 테이블 사전 — 17개 테이블 한눈에 {keep}
+### 7-4. 테이블 사전 — 17개 테이블은 각각 무엇인가 {keep}
 
-1장 7절 ERD가 **테이블이 어떻게 이어져 있나**를 보여 준다면, 이 사전은 **각 컬럼에 무엇이 들어 있나**를 정리한 것입니다. 쿼리를 쓰다 컬럼 뜻이 헷갈리면 여기로 돌아오세요.
+방금 적재한 데이터는 **창원(CW) 가전 공장**의 생산 데이터입니다. 공장에서 일어나는 일을 따라가면 테이블 17개가 순서대로 나옵니다.
 
 ```rows
-- | 그룹 | 테이블 (행 수) | 한 줄 설명
-database | 마스터 | `part_master` (68) · `vendor` (12) | 품목 · 협력사
-list-tree | BOM·소싱 | `bom_structure` (82) · `part_sourcing` (52) · `site_part_attr` (16) | 제품 구성 · 구매 조건 · 사이트별 관리 속성
-calendar | 계획·재고 | `production_plan` (20) · `inventory` (53) · `scheduled_receipt` (6) | 생산계획 · 현재 재고 · 입고 예정
-history | 이력 | `uit_change_history` (5) · `part_status_history` (5) | UIT 변경 · 상태 변경
-book-open | 코드표 | `code_uit` 외 6개 | 코드 → 뜻(영/한)
+- | 공장에서 일어나는 일 | 테이블 | 담긴 내용
+package | 어떤 물건을 다루나 | `part_master` | 완제품부터 나사 하나까지, 회사가 다루는 모든 품목의 명부
+building-2 | 누구에게서 사 오나 | `vendor` · `part_sourcing` | 협력사 명단 · 어떤 부품을 어느 업체에서 얼마에 사는지
+list-tree | 무엇으로 만드나 | `bom_structure` | 제품 하나에 어떤 부품이 몇 개 들어가는지(제품의 레시피)
+calendar | 언제 얼마나 만드나 | `production_plan` | 12월 1~14일 라인별 생산 대수
+warehouse | 지금 무엇이 있고 무엇이 오나 | `inventory` · `scheduled_receipt` | 창고 재고 · 앞으로 들어올 자재
+history | 무엇이 바뀌었나 | `uit_change_history` · `part_status_history` · `site_part_attr` | 품목 유형·상태가 바뀐 기록 · 공장마다 다르게 관리하는 품목
+book-open | 코드는 무슨 뜻인가 | `code_` 로 시작하는 7개 | `G`, `3`, `EA` 같은 코드를 사람이 읽는 말로 풀어 둔 표
 ```
 
-> psql에서 `\d bom.part_master`처럼 입력하면 컬럼 이름과 타입, PK·FK를 직접 볼 수 있습니다.
+### 7-4. part_master — 품목 명부 (68행) {keep}
 
-### 7-4. part_master — 품목 (68행)
+회사가 다루는 **모든 물건의 신분증**입니다. 냉장고 완제품, 그 안의 도어 조립체, 컴프레서, 나사, 수지 원료까지 한 행에 하나씩 들어 있습니다.
 
-한 행 = **품번 하나**. 다른 테이블이 모두 품번(`part_no`)으로 이 테이블에 이어집니다.
+| 컬럼 | 의미 | 데이터 예와 뜻 |
+| --- | --- | --- |
+| `part_no` | 품번. 물건마다 붙는 11자리 번호 | `ECP39799101` — 앞 3자리 `ECP`는 분류, 끝 2자리 `01`은 시리즈 |
+| `description` · `description_kr` | 영문 · 한글 품명 | `Compressor,Reciprocating` · 컴프레서 |
+| `class_lv1` | 대분류 (품번 첫 글자) | `T` 완제품 세트 · `A` 조립체 · `E` 전기·전자 · `M` 기구 · `R` 원자재 · `F` 나사·테이프 · `S` 소프트웨어 |
+| `class_lv2` | 중분류 (품번 앞 3자리) | `ECP` 컴프레서 · `FSC` 나사 · `MHG` 힌지 |
+| `tech_spec` | 규격 — 크기·재질·사양 | `M4x12 Zinc` — 굵기 4mm·길이 12mm 아연 도금 나사 |
+| `uom` | 수량을 세는 단위 | `EA` 개 · `KG` 킬로그램 · `SH` 장 |
+| `uit` | 품목 유형 — 누가 만들고 재고를 어떻게 관리하나 | `T` 사내 조립품 · `G` 국내 구매품 · `D` 수입 구매품 |
+| `status_code` | 지금 이 품번의 상태 | `3` 승인(양산 중) · `5` 폐기 예정 · `1` 폐기 |
+| `svc_code` · `svc_location_no` | A/S용으로도 파는 부품인가 · 서비스 부품 위치 | `R` 서비스 전용 · `Z` 소모품 겸 서비스(필터 등) · 비어 있으면 생산용만 |
+| `created_at` | 품번을 등록한 날 | 2025-02-06 |
 
-| 컬럼 | 키 | 뜻 | 예 |
-| --- | --- | --- | --- |
-| `part_no` | PK | 품번 11자리. 분류코드 3자리 + 8자리(끝 2자리 = 시리즈) | `ECP39799101` |
-| `description` | | 영문 품명. Main Function + Sub 규칙(13-2) | `Compressor,Reciprocating` |
-| `description_kr` | | 한글 품명 | 컴프레서 |
-| `class_lv1` | | 대분류 1글자 = 품번 첫 글자 | `E` |
-| `class_lv2` | | 분류코드 3자리 = 품번 앞 3자리 | `ECP` |
-| `tech_spec` | | 규격 | `M4x12 Zinc` |
-| `uom` | FK → `code_uom` | 수량 단위 | `EA` |
-| `uit` | FK → `code_uit` | 품목 유형 — 누가 만들고 어떻게 관리하나 | `G` |
-| `status_code` | FK → `code_status` | 라이프사이클 상태 | `3` (승인) |
-| `svc_code` | FK → `code_svc` | 서비스 부품 구분. 비어 있으면(NULL) 서비스 부품 아님 | `R` |
-| `svc_location_no` | | 서비스 부품 위치 번호 | `301A` |
-| `created_at` | | 품번 등록일 | 2025-02-06 |
+### 7-4. vendor — 협력사 명단 (12행) {keep}
 
-### 7-4. vendor — 협력사 (12행) {keep}
+부품과 원자재를 **공급하는 회사**의 목록입니다.
 
-한 행 = **업체 하나**.
+| 컬럼 | 의미 | 데이터 예와 뜻 |
+| --- | --- | --- |
+| `vendor_code` | 업체 번호 | `V1001` |
+| `vendor_name` | 업체 이름 | 한빛정밀(주) |
+| `country` | 업체가 있는 나라 | `KR` 한국 · `CN` 중국 · `JP` 일본 · `TW` 대만 · `VN` 베트남 |
+| `is_domestic` | 국내 업체인가 | `Y` 국내 · `N` 해외 |
+| `main_item` | 주로 공급하는 것 | 판금·프레스 · 수지 원료 · 가스켓·호스 |
 
-| 컬럼 | 키 | 뜻 | 예 |
-| --- | --- | --- | --- |
-| `vendor_code` | PK | 업체 코드 | `V1001` |
-| `vendor_name` | | 업체명 | 한빛정밀(주) |
-| `country` | | 국가 코드 2자리 | `KR`, `CN` |
-| `is_domestic` | | 국내 업체인가 (`Y`/`N`) | `Y` |
-| `main_item` | | 주로 공급하는 품목 | 판금·프레스 |
+> `V1012` **LG 사내 부품라인(C1)** 은 회사 밖 업체가 아니라 공장 안의 부품 생산 라인입니다. 사내에서 만든 부품도 업체처럼 번호를 붙여 거래를 기록합니다.
 
-> `V1012`는 **LG 사내 부품라인(C1)** 입니다. 사내 거래도 업체처럼 코드를 붙여 관리합니다.
+### 7-4. bom_structure — 제품의 레시피 (82행) {keep}
 
-### 7-4. bom_structure — BOM (82행) {keep}
+**제품 하나를 만드는 데 무엇이 몇 개 들어가는지** 적은 표입니다. 한 행은 "이것(부모) 1개에 저것(자식)이 몇 개 들어간다"는 한 줄입니다. 냉장고·세탁기 두 모델의 구성이 1~3단계로 내려갑니다.
 
-한 행 = **부모 1개에 자식이 몇 개 들어가나** 한 줄. 모델(세트)에서 시작해 1~3단계 아래로 내려갑니다.
+| 컬럼 | 의미 | 데이터 예와 뜻 |
+| --- | --- | --- |
+| `bom_id` | 줄 번호 | `1` |
+| `model_part_no` | 이 줄이 속한 완제품 모델 | `TRF38316001` 냉장고 세트 |
+| `parent_part_no` | 조립되는 쪽 (부모) | `TRF38316001` 냉장고 세트 |
+| `child_part_no` | 들어가는 쪽 (자식) | `ACB22943901` 캐비닛 조립체 |
+| `bom_level` | 완제품에서 몇 단계 아래인가 | `1` 완제품에 바로 들어감 · `3` 조립체의 조립체에 들어감 |
+| `qty_per` · `uom` | 부모 1개에 들어가는 양과 단위 | `2` `EA` → 2개 · `0.35` `KG` → 수지 0.35kg |
+| `supply_type` | 이 자재가 라인에 오는 방식 | `Assembly Pull` LG가 발주·입고 · `Supplier` 협력사가 알아서 조달 · `Phantom` 공정 관리용, 재고 없음 |
+| `c_osp_flag` | 유상사급인가 — LG가 산 자재를 협력사에 **돈 받고 넘겨** 가공시키나 | `Y` 유상사급 · `N` 직거래·협력사 자체 제작 · `H` 둘 다 |
+| `effective_from` | 이 구성을 적용하기 시작한 날 | 2026-01-01 |
 
-| 컬럼 | 키 | 뜻 | 예 |
-| --- | --- | --- | --- |
-| `bom_id` | PK | BOM 행 번호 | `1` |
-| `model_part_no` | FK → `part_master` | 최상위 세트(모델) 품번 | `TRF38316001` |
-| `parent_part_no` | FK → `part_master` | 부모 품번 — 조립되는 쪽 | `TRF38316001` |
-| `child_part_no` | FK → `part_master` | 자식 품번 — 들어가는 쪽 | `ACB22943901` |
-| `bom_level` | | 모델에서 몇 단계 아래인가 | `1` |
-| `qty_per` | | 부모 1개당 자식 소요량 | `2` |
-| `uom` | | 소요량 단위 (FK 없음) | `EA` |
-| `supply_type` | FK → `code_supply_type` | 공급 방식 | `Assembly Pull` |
-| `c_osp_flag` | FK → `code_cosp` | 유상사급 구분 | `N` |
-| `effective_from` | | 이 BOM 줄의 적용 시작일 | 2026-01-01 |
+### 7-4. part_sourcing — 구매 조건표 (52행) {keep}
 
-> `(model_part_no, parent_part_no, child_part_no)` 조합은 **UNIQUE**입니다. 같은 모델 안에서 같은 부모-자식 줄이 두 번 나올 수 없습니다.
+**어떤 부품을 어느 업체에서, 얼마에, 어떤 조건으로 사는지** 적은 표입니다. 같은 부품을 두 업체에서 사면 두 행이 됩니다.
 
-### 7-4. part_sourcing — 소싱 (52행) {keep}
-
-한 행 = **품번 × 업체 × 사이트**별 구매 조건. PK가 세 컬럼으로 된 복합키입니다.
-
-| 컬럼 | 키 | 뜻 | 예 |
-| --- | --- | --- | --- |
-| `part_no` | PK · FK → `part_master` | 품번 | `FSC67181101` |
-| `vendor_code` | PK · FK → `vendor` | 공급 업체 | `V1001` |
-| `site_code` | PK | 사이트 코드 | `CW` (창원) |
-| `line_type` | FK → `code_line_type` | 구매 라인 유형 — 국내·수입·사급 등 | `D` |
-| `po_price` | | 구매 단가 | `12` |
-| `currency` | | 통화 | `KRW`, `USD` |
-| `lead_time_days` | | 발주부터 입고까지 걸리는 날 수 | `7` |
-| `moq` | | 최소 주문 수량 | `10000` |
-
-### 7-4. site_part_attr — 사이트별 속성 (16행) {keep}
-
-같은 품번이라도 **사이트(공장)마다 UIT·상태가 다를 수 있어** 따로 둡니다.
-
-| 컬럼 | 키 | 뜻 | 예 |
-| --- | --- | --- | --- |
-| `site_code` | PK | 사이트 코드 | `CW`, `HN` |
-| `part_no` | PK · FK → `part_master` | 품번 | `EBA56264701` |
-| `uit` | | 이 사이트에서의 UIT (FK 없음) | `G` |
-| `status_code` | | 이 사이트에서의 상태 (FK 없음) | `3` |
-| `site_name` | | 사이트 이름 | 창원, 해외법인 |
-
-> 예: `EBA56264701`은 창원(`CW`)에서는 `G`(국내 구매품), 해외법인(`HN`)에서는 `T`(사내 조립품)입니다.
-
-### 7-4. uit_change_history — UIT 변경 이력 (5행) {keep}
-
-한 행 = 품번의 **UIT가 바뀐 기록** 한 건.
-
-| 컬럼 | 키 | 뜻 | 예 |
-| --- | --- | --- | --- |
-| `change_id` | PK | 변경 번호 | `1` |
-| `part_no` | FK → `part_master` | 품번 | `EBA56264701` |
-| `old_uit` · `new_uit` | | 바뀌기 전 · 뒤 UIT | `T` → `G` |
-| `changed_by_dept` | | 변경한 부서 | Manufacturing Engineering |
-| `change_reason` | | 변경 사유 | PCB 조립 외주화 |
-| `changed_at` | | 변경일 | 2026-03-12 |
-| `line_type_updated` | | 구매 라인 유형(`line_type`)도 함께 바꿨나 (`Y`/`N`) | `Y` |
-
-### 7-4. part_status_history — 상태 변경 이력 (5행) {keep}
-
-한 행 = 품번의 **상태가 바뀐 기록** 한 건.
-
-| 컬럼 | 키 | 뜻 | 예 |
-| --- | --- | --- | --- |
-| `part_no` | FK → `part_master` | 품번. **PK가 없어** 같은 품번이 여러 번 나옴 | `MHG51215701` |
-| `old_status` · `new_status` | | 바뀌기 전 · 뒤 상태 코드 | `3` → `5` |
-| `changed_at` | | 변경일 | 2026-04-01 |
-| `reason` | | 변경 사유 | 신규 힌지로 설계 변경(ECO-2604) |
+| 컬럼 | 의미 | 데이터 예와 뜻 |
+| --- | --- | --- |
+| `part_no` | 사는 부품 | `FSC67181101` 나사 M4x12 |
+| `vendor_code` | 사 오는 업체 | `V1001` 한빛정밀(주) |
+| `site_code` | 사는 공장 | `CW` 창원 |
+| `line_type` | 구매 방식 | `D` 국내 구매 · `I` 수입 · `N` 사내 거래 · `S` 유상사급 |
+| `po_price` · `currency` | 1개(1단위) 구매 단가와 통화 | `12` `KRW` → 나사 1개 12원 · `14.0` `USD` |
+| `lead_time_days` | 주문하고 받을 때까지 걸리는 날 수 | `7` → 1주일 |
+| `moq` | 한 번에 주문해야 하는 최소 수량 | `10000` → 나사는 1만 개 단위로 주문 |
 
 ### 7-4. production_plan — 생산계획 (20행) {keep}
 
-한 행 = **어느 날 어느 라인에서 어떤 모델을 몇 대** 만들지.
+**언제, 어느 라인에서, 어떤 모델을 몇 대 만들지** 정한 표입니다. 12월 1일부터 14일까지의 계획이 들어 있습니다.
 
-| 컬럼 | 키 | 뜻 | 예 |
-| --- | --- | --- | --- |
-| `plan_id` | PK | 계획 번호 | `1` |
-| `plan_date` | | 생산일 (2026-12-01 ~ 12-14) | 2026-12-01 |
-| `site_code` | | 사이트 | `CW` |
-| `line_code` | | 생산 라인 | `LINE-A` 세탁기 · `LINE-B` 냉장고 |
-| `model_part_no` | FK → `part_master` | 생산할 모델(세트) 품번 | `TRF38316001` |
-| `plan_qty` | | 계획 수량 | `380` |
-| `shift` | | 근무조 (데이터에는 `D`만 있음) | `D` |
+| 컬럼 | 의미 | 데이터 예와 뜻 |
+| --- | --- | --- |
+| `plan_id` | 계획 번호 | `1` |
+| `plan_date` | 생산하는 날 | 2026-12-01 |
+| `site_code` | 공장 | `CW` 창원 |
+| `line_code` | 생산 라인 | `LINE-A` 세탁기 라인 · `LINE-B` 냉장고 라인 |
+| `model_part_no` | 만들 완제품 모델 | `TRF38316001` 냉장고 세트 |
+| `plan_qty` | 만들 대수 | `380` → 그날 냉장고 380대 |
+| `shift` | 근무조 | `D` (이 데이터에는 `D`만 있음) |
 
-### 7-4. inventory — 재고 (53행) {keep}
+> 생산계획 × BOM의 `qty_per`를 하면 **그날 필요한 부품 수량**이 나옵니다. 뒤 단원에서 재고·입고 예정과 비교해 부족한 부품을 찾습니다.
 
-한 행 = **사이트 × 품번 × 보관 위치**의 재고. PK가 세 컬럼으로 된 복합키입니다.
+### 7-4. inventory — 창고 재고 (53행) {keep}
 
-| 컬럼 | 키 | 뜻 | 예 |
-| --- | --- | --- | --- |
-| `site_code` | PK | 사이트 | `CW` |
-| `part_no` | PK · FK → `part_master` | 품번 | `FSC67181101` |
-| `location` | PK | 보관 위치(창고) | `WH-A`, `WH-C1` |
-| `on_hand_qty` | | 현재 재고 수량 | `372486` |
-| `as_of_date` | | 재고 기준일 (모두 2026-11-30) | 2026-11-30 |
+**2026년 11월 30일 기준으로 창고에 있는 수량**입니다.
+
+| 컬럼 | 의미 | 데이터 예와 뜻 |
+| --- | --- | --- |
+| `site_code` | 공장 | `CW` 창원 |
+| `part_no` | 보관 중인 품목 | `FSC67181101` 나사 M4x12 |
+| `location` | 보관 창고 | `WH-A` 자재 창고 · `WH-C1` 사내 부품라인(C1) 창고 |
+| `on_hand_qty` | 지금 있는 수량 (단위는 품목의 `uom`) | `372486` → 나사 37만여 개 |
+| `as_of_date` | 언제 기준 수량인가 | 2026-11-30 (모든 행 같음) |
 
 ### 7-4. scheduled_receipt — 입고 예정 (6행) {keep}
 
-한 행 = **앞으로 들어올 입고** 한 건.
+**아직 도착하지 않았지만 앞으로 들어올 자재**입니다. 재고와 합쳐서 "계획한 날까지 부품이 충분한가"를 판단할 때 씁니다.
 
-| 컬럼 | 키 | 뜻 | 예 |
-| --- | --- | --- | --- |
-| `receipt_id` | PK | 입고 번호 | `1` |
-| `site_code` | | 입고될 사이트 | `CW` |
-| `part_no` | FK → `part_master` | 품번 | `ECP39799101` |
-| `vendor_code` | | 공급 업체 (`REFERENCES` 없음 — 1장 7-3) | `V1004` |
-| `eta_date` | | 도착 예정일 | 2026-12-08 |
-| `qty` | | 입고 수량 | `800` |
-| `po_no` | | 구매 오더 번호 | `PO26-1101` |
-| `receipt_type` | | `Scheduled` 확정된 입고 · `Planned` 계획 단계 입고 | `Scheduled` |
+| 컬럼 | 의미 | 데이터 예와 뜻 |
+| --- | --- | --- |
+| `receipt_id` | 입고 예정 번호 | `1` |
+| `site_code` | 들어올 공장 | `CW` 창원 |
+| `part_no` | 들어올 품목 | `ECP39799101` 컴프레서 |
+| `vendor_code` | 보내는 업체 | `V1004` |
+| `eta_date` | 도착 예정일 | 2026-12-08 |
+| `qty` | 들어올 수량 | `800` → 컴프레서 800대 |
+| `po_no` | 구매 주문서 번호 | `PO26-1101` |
+| `receipt_type` | 입고가 얼마나 확실한가 | `Scheduled` 주문이 확정된 입고 · `Planned` 아직 계획 단계 |
 
-### 7-4. 코드표 7개 {keep}
+### 7-4. 변경 이력 두 가지 (각 5행) {keep}
 
-코드표는 모두 **코드(PK) + 그 뜻**으로 되어 있습니다. `meaning_en`·`meaning_kr`은 코드의 영문·한글 뜻입니다.
+품목은 한 번 정해지면 끝이 아니라 **외주화·내재화·설계 변경으로 바뀝니다.** 그 기록입니다.
 
-| 코드표 (행 수) | PK | 나머지 컬럼 | 쓰는 곳 |
-| --- | --- | --- | --- |
-| `code_uit` (11) | `uit` 품목 유형 | `classification` 완제품·Make·Buy 구분, `maker` LG·Vendor | `part_master.uit` |
-| `code_uom` (7) | `uom` 단위 | `name`, `uom_class` 수량·길이·무게·부피, `remark_kr` | `part_master.uom` |
-| `code_status` (6) | `status_code` 상태 | `status_name`, `active_flag` 활성 여부, `system_effect` 시스템에서 막히는 일 | `part_master.status_code` |
-| `code_supply_type` (3) | `supply_type` 공급 방식 | `meaning_en`, `meaning_kr` | `bom_structure.supply_type` |
-| `code_line_type` (9) | `line_type` 구매 라인 유형 | `category` Product·Part, `meaning_en` | `part_sourcing.line_type` |
-| `code_svc` (2) | `svc_code` 서비스 부품 구분 | `meaning_en`, `meaning_kr` | `part_master.svc_code` |
-| `code_cosp` (3) | `c_osp_flag` 유상사급 구분 | `meaning_en`, `meaning_kr` | `bom_structure.c_osp_flag` |
+`uit_change_history` — **품목 유형(UIT)이 바뀐 기록**
 
-> 코드 값 하나하나의 뜻(UIT `G`·`T`·`P`, 상태 `1`~`6` 등)은 13절에서 직접 조회하며 읽습니다.
+| 컬럼 | 의미 | 데이터 예와 뜻 |
+| --- | --- | --- |
+| `change_id` · `part_no` | 변경 번호 · 바뀐 품목 | `1` · `EBA56264701` PCB |
+| `old_uit` → `new_uit` | 바뀌기 전 → 뒤 유형 | `T` → `G` 사내 조립하던 것을 국내에서 사 오게 됨 |
+| `changed_by_dept` · `change_reason` | 바꾼 부서 · 이유 | Manufacturing Engineering · PCB 조립 외주화 |
+| `changed_at` · `line_type_updated` | 바꾼 날 · 구매 방식도 함께 바꿨나 | 2026-03-12 · `Y` |
+
+`part_status_history` — **상태가 바뀐 기록**
+
+| 컬럼 | 의미 | 데이터 예와 뜻 |
+| --- | --- | --- |
+| `part_no` | 상태가 바뀐 품목 | `MHG51215701` 도어 힌지(구형) |
+| `old_status` → `new_status` | 바뀌기 전 → 뒤 상태 | `3` → `5` 양산 중이던 것을 폐기 예정으로 |
+| `changed_at` · `reason` | 바꾼 날 · 이유 | 2026-04-01 · 신규 힌지로 설계 변경 |
+
+### 7-4. site_part_attr — 공장마다 다른 품목 속성 (16행) {keep}
+
+같은 부품이라도 **공장에 따라 직접 만들기도 하고 사 오기도 합니다.** 그래서 공장별 유형·상태를 따로 적어 둡니다.
+
+| 컬럼 | 의미 | 데이터 예와 뜻 |
+| --- | --- | --- |
+| `site_code` · `site_name` | 공장 | `CW` 창원 · `HN` 해외법인 |
+| `part_no` | 품목 | `EBA56264701` PCB |
+| `uit` | 이 공장에서의 품목 유형 | 창원 `G`(국내 구매) · 해외법인 `T`(사내 조립) |
+| `status_code` | 이 공장에서의 상태 | `3` 승인(양산 중) |
+
+> 같은 PCB를 창원은 사 오고 해외법인은 직접 조립합니다. `part_master`의 `uit`는 대표값 하나뿐이라, 공장별 차이는 이 표에서 봅니다.
+
+### 7-4. 코드표 7개 — 코드를 말로 풀어 둔 표 {keep}
+
+다른 테이블에는 `G`, `3`, `EA`처럼 **짧은 코드**만 들어 있습니다. 코드표는 그 코드가 무슨 뜻인지 적어 둔 사전입니다. 모두 **코드 + 영문 뜻(`meaning_en`) + 한글 뜻(`meaning_kr`)** 이 기본입니다.
+
+| 코드표 | 무엇을 나타내나 | 코드와 뜻 |
+| --- | --- | --- |
+| `code_uit` (11) | 품목 유형 | 완제품 `F`·`C`·`Q` · 사내 제작 `T`·`P` · 협력사 제작 `S`·`M`·`R` · 구매 `G` 국내·`D` 수입 · 관리용 `X` |
+| `code_status` (6) | 품번 상태 | `1` 폐기 · `2` 등록 처리중 · `3` 승인(양산) · `4` 서비스 전용 · `5` 폐기 예정 · `6` 생산 중단 |
+| `code_uom` (7) | 수량 단위 | `EA` 개 · `SH` 장 · `MZ` 미터 · `KG` · `GR` 그램 · `ST` 세트 · `LI` 리터 |
+| `code_supply_type` (3) | 자재 공급 방식 | `Assembly Pull` · `Supplier` · `Phantom` |
+| `code_line_type` (9) | 구매 방식 | 상품 `Q`·`V`·`P` · 부품 `D` 국내 · `I` 수입 · `N` 사내 거래 · `S` 유상사급 · `R`·`M` 무상사급 |
+| `code_svc` (2) | 서비스 부품 구분 | `R` 서비스 전용 · `Z` 소모품 겸 서비스 |
+| `code_cosp` (3) | 유상사급 구분 | `Y` 유상사급 · `N` 직거래·자체 제작 · `H` 둘 다 |
+
+> 몇몇 코드표에는 뜻 말고도 정보가 더 있습니다. `code_uit`의 `classification`·`maker`(누가 만드나), `code_status`의 `active_flag`·`system_effect`(그 상태에서 발주·BOM 변경이 되는지), `code_uom`의 `uom_class`(개수·길이·무게·부피), `code_line_type`의 `category`(상품·부품). 코드 하나하나는 13절에서 직접 조회하며 읽습니다.
 
 # 실습 데이터 조회하기
 
