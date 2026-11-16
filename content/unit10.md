@@ -1545,12 +1545,12 @@ ERROR:  permission denied for table vendor
 
 ```error 출력 결과 — DROP ROLE plan_viewer; 첫 실행
 ERROR:  role "plan_viewer" cannot be dropped because some objects depend on it
-DETAIL:  privileges for database bom_lab
-privileges for schema bom
-privileges for column vendor_code of table bom.vendor
-privileges for column vendor_name of table bom.vendor
-privileges for column country of table bom.vendor
-privileges for table bom.production_plan
+DETAIL:  privileges for schema bom
+privileges for column vendor_code of table vendor
+privileges for column vendor_name of table vendor
+privileges for column country of table vendor
+privileges for table production_plan
+privileges for database bom_lab
 ```
 
 ### 8-6. 복습 1 · 2 답 {keep}

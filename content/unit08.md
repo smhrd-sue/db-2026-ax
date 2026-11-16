@@ -278,7 +278,7 @@ VALUES (11, 'CW', 'ECP39799101', '2026-12-32', 300);
 ERROR:  date/time field value out of range: "2026-12-32"
 LINE 2: VALUES (11, 'CW', 'ECP39799101', '2026-12-32', 300);
                                          ^
-HINT:  Perhaps you need a different "datestyle" setting.
+HINT:  Perhaps you need a different "DateStyle" setting.
 ```
 :::
 

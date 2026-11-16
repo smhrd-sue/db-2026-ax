@@ -92,7 +92,7 @@ CREATE TABLE part_master (
 
 ### 1-3. 테이블 구조 확인하기 {keep}
 
-만들어진 테이블의 구조는 **`information_schema.columns`** 를 조회하면 볼 수 있습니다. DBeaver·pgAdmin·psql 어디서나 똑같이 동작합니다.
+만들어진 테이블의 구조는 **`information_schema.columns`** 를 조회하면 볼 수 있습니다. pgAdmin·psql 어디서나 똑같이 동작합니다.
 
 :::cols
 ```sql
@@ -130,7 +130,7 @@ SELECT column_name
 - `is_nullable = NO`인 컬럼은 `NOT NULL`(또는 PK)이 걸려 있다는 뜻입니다.
 - `CHAR`는 `character`로, `INT`는 `integer`로 표시됩니다. 같은 자료형의 **정식 이름**입니다.
 
-> **psql을 쓴다면** `\d bom.part_master` 한 줄로 컬럼·PK·FK·「이 테이블을 참조하는 테이블」까지 한 번에 볼 수 있습니다. `\d`는 psql 전용 명령이라 DBeaver에서는 동작하지 않습니다.
+> **psql을 쓴다면** `\d bom.part_master` 한 줄로 컬럼·PK·FK·「이 테이블을 참조하는 테이블」까지 한 번에 볼 수 있습니다. `\d`는 psql 전용 명령이라 pgAdmin Query Tool에서는 동작하지 않습니다.
 
 ### 1-4. 연습 공간 만들기 — lab 스키마 ⭐ {keep}
 
@@ -159,7 +159,7 @@ SELECT current_schemas(false);
 > `search_path`는 접속할 때마다 초기화됩니다. 다시 접속했다면 `SET search_path TO lab, bom;`부터 다시 실행하세요. (`CREATE SCHEMA lab;`은 처음 한 번만 실행합니다.)
 
 :::teacher 강사 확인
-- `search_path`는 접속(세션)마다 초기화됩니다. 쉬는 시간 뒤 DBeaver를 다시 연결했다면 `SET search_path TO lab, bom;`부터 다시 실행하게 하세요. 테이블이 `public`에 만들어졌다는 질문이 나오면 대부분 이 원인입니다.
+- `search_path`는 접속(세션)마다 초기화됩니다. 쉬는 시간 뒤 pgAdmin Query Tool을 새로 열었거나 psql에 다시 접속했다면 `SET search_path TO lab, bom;`부터 다시 실행하게 하세요. 테이블이 `public`에 만들어졌다는 질문이 나오면 대부분 이 원인입니다.
 :::
 
 ## 2. CREATE TABLE — 테이블 만들기
