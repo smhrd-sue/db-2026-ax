@@ -457,6 +457,13 @@ unit02/09-pgadmin-password.png
 ```
 
 > 설치 프로그램이 내 PC 서버(`localhost:5432`)를 미리 등록해 두기 때문에, 접속 정보를 새로 만들 필요가 없습니다.
+>
+> pgAdmin을 실행했는데 `The pgAdmin 4 server could not be contacted` 창이 뜨면 Windows 11 **스마트 앱 컨트롤**이 pgAdmin 파일을 막은 경우가 많습니다. 11-1의 해결 방법을 보세요.
+
+:::teacher 강사 확인
+- 스마트 앱 컨트롤이 켜진 Windows 11에서는 pgAdmin 내장 파이썬의 서명 없는 확장 파일(`.pyd`)이 차단되어 pgAdmin 서버가 뜨지 않습니다. 로그(`%APPDATA%\pgadmin4\pgadmin4.*.log`) 끝에 `ImportError: DLL load failed while importing _processors_cy`가 남고, 뒤의 한글 메시지는 깨져 보입니다.
+- 학생 PC는 **Windows 보안 → 앱 및 브라우저 컨트롤 → 스마트 앱 컨트롤 설정**에서 상태를 미리 확인하세요. 끌 때 Windows 버전에 따라 "다시 켜려면 재설치가 필요하다"는 경고가 나올 수 있으므로, 끄기 어려운 학생은 조회 실습을 psql에서 진행하게 하면 됩니다.
+:::
 
 ### 8-2. 테이블 확인 — 왼쪽 트리 펼치기 {keep}
 
@@ -698,6 +705,7 @@ ALTER DATABASE bom_lab SET search_path TO bom, hr, public;
 | `0xec 0x9e 바이트로 조합된 문자(인코딩: "UHC")와 대응되는 문자 코드가 "UTF8" 인코딩에는 없습니다` (영문: `character with byte sequence … in encoding "UHC" has no equivalent in encoding "UTF8"`) 뒤로 `relation "part_master" does not exist`가 줄줄이 | psql이 UTF-8 스크립트를 UHC로 읽어 한글 주석이 든 `CREATE TABLE`이 실패 | `\encoding UTF8` 입력 후 `\i schema_postgres.sql` 다시 실행 |
 | `\dn`·`\dt` 결과의 한글 머리글이 `\xB8\xA7`, `테\u000C\xBA`처럼 깨짐 (영문 값은 정상) | `\encoding UTF8` 상태로 결과를 보는 중. 콘솔은 949(UHC)로 글자를 그림 | `\encoding UHC` 입력. 데이터는 정상이므로 다시 적재할 필요 없음 |
 | `relation "part_master" does not exist` | search_path가 `bom`이 아님 / 다른 DB에 접속 | `SET search_path TO bom;` 실행, 접속 DB가 `bom_lab`인지 확인 (`\conninfo`) |
+| pgAdmin 실행 시 `The pgAdmin 4 server could not be contacted` 창 (Fatal Error) | Windows 11 **스마트 앱 컨트롤**이 pgAdmin 내장 파이썬 파일을 차단 | pgAdmin 창을 모두 닫고 **Windows 보안 → 앱 및 브라우저 컨트롤 → 스마트 앱 컨트롤 설정 → 끄기** 후 다시 실행. 끄기 어렵다면 조회도 psql에서 진행 |
 | pgAdmin에서 `\copy` 줄 syntax error | psql 전용 명령을 pgAdmin에서 실행 | 적재는 SQL Shell (psql)에서 |
 | 프롬프트가 `bom_lab-#`에서 멈춤 | SQL 끝에 `;`이 없음 | `;` 입력 후 Enter |
 | `database "bom_lab" already exists` | 이미 만든 DB를 다시 만듦 | 그대로 `\c bom_lab` 하면 됨 |
