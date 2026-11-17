@@ -1592,3 +1592,56 @@ circle-alert | `part_status_history`엔 PK가 없다 | 5-2의 「식별자는 �
 2. `part_master.part_no`
 3. `bom_structure`(모델 → 자식 품번) → `part_sourcing`(품번 → 협력사 코드) → `vendor`(협력사 코드 → 이름)
 :::
+
+### 7-6. 수업 예제 데이터 — HR {keep}
+
+3장부터 SQL 문법을 배울 때는 **회사 인사(HR) 데이터**를 예제로 씁니다. 직원·부서·직무처럼 누구나 아는 개념이라 문법에만 집중할 수 있습니다. 배운 문법은 위의 **생산 데이터**로 확인 문제·복습 문제를 풀며 현업에 적용해 봅니다.
+
+```icons 두 데이터의 역할
+users | HR 데이터 (`hr`) | 문법을 **배울 때** 쓰는 예제 — 직원 107명이 일하는 가상 회사 | plum | [쓰는 곳] 각 단원 본문 예제
+factory | 생산 데이터 (`bom`) | 배운 문법을 **연습할 때** 쓰는 문제 — 창원 가전 공장 | lime | [쓰는 곳] 확인 문제 · 복습 문제
+```
+
+```stats HR 데이터 규모
+users | 107 | 직원
+building-2 | 27 | 부서
+id-card | 19 | 직무
+building | 23 | 근무지
+```
+
+> HR 데이터는 Oracle이 공개한 학습용 샘플(`hr` 스키마)을 PostgreSQL로 옮긴 것입니다. 직원 이름·급여는 모두 가상 데이터입니다.
+
+### 7-6. HR 데이터 구조 ① 직원을 가운데 두고 {keep}
+
+```erd 직원(employees)을 가운데 두고 — 선 위 글자가 FK 컬럼, 실선 = 식별 관계 · 점선 = 비식별 관계
+departments (부서) @building-2 [*department_id (부서 번호), department_name (부서 이름), manager_id (부서장) (FK), location_id (근무지) (FK)] ; ||..o< department_id ; employees (직원) @users [*employee_id (직원 번호), first_name · last_name (이름), salary (급여), job_id (직무) (FK), manager_id (상사) (FK), department_id (부서) (FK)]
+jobs (직무) @id-card [*job_id (직무 코드), job_title (직무 이름), min_salary · max_salary (급여 범위)] ; ||..o< job_id ; employees (직원) @users
+employees (직원) @users ; ||--o< employee_id ; job_history (직무 이력) @history [*employee_id (직원 번호) (FK), *start_date (시작일), end_date (종료일), job_id (그때 직무) (FK)]
+```
+
+### 7-6. HR 데이터 구조 ② 근무지와 읽는 법 {keep}
+
+```erd 부서가 있는 곳 — 근무지 → 나라 → 대륙
+regions (대륙) @globe [*region_id, region_name] ; ||..o< region_id ; countries (국가) @map [*country_id, country_name, region_id (FK)] ; ||..o< country_id ; locations (근무지) @building [*location_id, city (도시), country_id (FK)] ; ||..o< location_id ; departments (부서) @building-2 [*department_id]
+```
+
+```rows 읽을 곳
+- | 구조 | 뜻
+repeat~rose | `employees.manager_id` → `employees` | 직원의 상사도 직원이라 **자기 자신을 참조**합니다. 생산 데이터의 `bom_structure`가 `part_master`를 부모·자식으로 참조하는 것과 같은 모양입니다
+git-merge~lime | `job_history`의 PK = `employee_id + start_date` | 한 직원이 직무를 여러 번 바꿀 수 있어 **복합키**·식별 관계(실선)입니다
+map~plum | `regions` → `countries` → `locations` → `departments` | 부서가 어느 도시·나라·대륙에 있는지 차례로 이어집니다
+```
+
+### 7-6. 직접 해 보기 — HR 구조 읽기 {keep}
+
+:::try
+1. 직원 `Steven King`이 **어느 도시**에서 일하는지 알려면 어떤 테이블을 어떤 순서로 거쳐야 할까요?
+2. 직원의 **직무 이름**(`job_title`)은 어느 테이블에 있고, 무엇으로 이어지나요?
+3. 직원 한 명은 `job_history`의 몇 행과 연결될 수 있을까요?
+:::
+
+:::answer
+1. `employees`(`department_id`) → `departments`(`location_id`) → `locations`(`city`)
+2. `jobs` 테이블. `employees.job_id` = `jobs.job_id`로 이어집니다.
+3. 0행 이상 여러 행. 직무를 바꾼 적이 없으면 0행, 바꿀 때마다 한 행씩 늘어납니다.
+:::

@@ -14,10 +14,10 @@ title: 권한 관리
 :::
 
 :::teacher 단원 구성 (60분)
-- 기존 교안 `12. DCL.pptx` · `12. DCL.txt`의 **흐름(사용자 생성 → 접속 권한 → GRANT/REVOKE → ROLE → 스키마 → 객체 권한)** 을 따르되, 예제는 모두 BOM 실습 데이터(`bom` 스키마)로 바꿨습니다.
-- `AI 융합·생산 SQL 수업 운영안 (32H)` 표에는 DCL 교시가 따로 없습니다. 6장(에이전트 계정 / 승인자 계정)이 Day 4 2교시 **Q13**(UIT 정정 + 이력 INSERT)과 5교시 **Python 연동**(접속 계정) 사이를 잇는 내용이므로, **Day 4 2교시 뒤 ~ 5교시 앞**에 두는 것을 제안합니다. 배치는 강사님이 정해 주세요.
-- 교안의 모든 SQL과 실행 결과·오류 메시지는 `schema_postgres.sql`로 적재한 `bom_lab` DB에서 **새 계정으로 직접 접속해 실행한 결과**입니다. (검증 환경: PostgreSQL 16.15, 접속은 `localhost` 비밀번호 인증. 수업 PC는 PostgreSQL 18이므로 수업 전 한 번 더 실행해 보세요.)
-- 각 장 끝 「확인 문제」는 HR 실습 데이터(`hr` 스키마)로 만들었습니다. 답안 결과는 `hr.departments`·`hr.employees` 두 테이블의 데이터로 직접 실행한 값입니다.
+- 기존 교안 `12. DCL.pptx` · `12. DCL.sql`의 **흐름(사용자 생성 → 접속 권한 → GRANT/REVOKE → ROLE → 스키마 → 객체 권한)** 을 따르고, 본문 예제는 기존 교안처럼 HR 실습 데이터(`hr` 스키마)의 `employees`에 권한을 주고 받는 것으로 진행합니다. 오라클의 `CREATE SESSION`은 PostgreSQL의 `LOGIN` 속성 + `CONNECT` 권한으로 바꿨습니다.
+- 각 장 끝 「확인 문제」와 8장 복습 문제는 생산 실습 데이터(`bom` 스키마)로 풉니다. 기존 6장(에이전트 계정 `agent_bot` / 승인자 계정 `mat_staff`, UIT 정정)은 같은 내용을 본문 6장에서 HR로 배우고, 생산 데이터 버전은 **8장 복습 7·8**로 옮겼습니다.
+- `AI 융합·생산 SQL 수업 운영안 (32H)` 표에는 DCL 교시가 따로 없습니다. 6장(에이전트 계정 / 승인자 계정)이 Day 4 2교시(트랜잭션: 마스터 변경 + 이력 INSERT)와 5교시 **Python 연동**(접속 계정) 사이를 잇는 내용이므로, **Day 4 2교시 뒤 ~ 5교시 앞**에 두는 것을 제안합니다. 배치는 강사님이 정해 주세요.
+- 교안의 모든 SQL과 실행 결과·오류 메시지는 `bom_lab` DB(`schema_postgres.sql` + `hr_postgres.sql` 적재)에서 **새 계정으로 직접 접속해 실행한 결과**입니다. (검증 환경: PostgreSQL 18.7, 롤이 `postgres` 하나뿐인 새 서버. 접속 오류 메시지의 포트는 수업 PC 기본값 5432로 적었습니다.)
 - ==관리자 명령은 `postgres` 창, 확인은 새 계정 창==에서 실행합니다. `postgres`는 슈퍼유저라 권한 검사를 받지 않으므로, `postgres` 창에서 테스트하면 오류가 나지 않아 실습이 되지 않습니다(1-3). 코드 위 캡션에 어느 창에서 실행하는지 적어 두었습니다.
 - 이 단원은 1교시(60분) 분량입니다. 확인 문제와 8장 복습 문제는 시간에 따라 일부만 풀고, 나머지는 과제로 활용하세요.
 
@@ -58,12 +58,14 @@ users | ROLE | 권한 **묶음** — 여러 권한을 한 이름으로 묶어 �
 
 Day 4에서 만드는 구조는 「**에이전트가 조회·판단 → 사람이 승인 → 기록**」입니다. 이때 에이전트가 `postgres`(관리자) 계정으로 접속한다면 어떻게 될까요?
 
-- 판단만 해야 하는 에이전트가 `part_master`의 UIT를 **직접 바꿀 수 있습니다.**
-- 실수 한 번으로 `uit_change_history`(변경 이력)를 **지우거나 덮어쓸 수 있습니다.**
+- 판단만 해야 하는 에이전트가 `employees`의 급여·부서를 **직접 바꿀 수 있습니다.**
+- 실수 한 번으로 `job_history`(직무 이력)를 **지우거나 덮어쓸 수 있습니다.**
 
 ==계정마다 「하는 일에 꼭 필요한 권한만」 주는 것==을 **최소 권한 원칙**이라고 합니다. DCL은 이 원칙을 DB에서 지키는 방법입니다. 6장에서 에이전트 계정과 승인자 계정을 직접 나눠 봅니다.
 
 ### 1-3. 지금 나는 누구로 접속해 있나요? {keep}
+
+> 실행 전: `SET search_path TO hr;` — 이 단원의 본문 예제는 HR 실습 데이터(`hr` 스키마), 확인 문제·복습 문제는 생산 실습 데이터(`bom` 스키마)로 실행합니다. 권한은 창(계정)마다 따로 확인하므로, 쿼리에는 되도록 `hr.`·`bom.`을 붙여 씁니다.
 
 ```sql postgres 창
 SELECT current_user;
@@ -268,17 +270,17 @@ SELECT datname, datacl
 - 오류 메시지 앞부분의 주소(`"localhost" (127.0.0.1)`)는 PC 설정에 따라 다르게 보일 수 있습니다. `FATAL:` 뒤의 내용을 보세요.
 - 열려 있는 psql 창에서 `\c bom_lab dcl_test`로 계정을 바꿔 접속할 수도 있습니다(필요하면 비밀번호를 묻습니다).
 
-### 2-4. 확인 문제 — HR 데이터 {keep}
+### 2-4. 확인 문제 — 생산 데이터 {keep}
 
-> 이 단원의 확인 문제는 `postgres` 창(관리자)과 새 계정 창(확인)을 오가며 풉니다. 2-3까지 실행해 `bom_lab`의 PUBLIC 접속 권한이 회수된 상태라고 가정합니다.
+> 이 단원의 확인 문제는 생산 실습 데이터(`bom` 스키마)를 다룰 계정으로, `postgres` 창(관리자)과 새 계정 창(확인)을 오가며 풉니다. 2-3까지 실행해 `bom_lab`의 PUBLIC 접속 권한이 회수된 상태라고 가정합니다.
 
 :::try
-**[복습]** 인사 데이터 조회용 계정 `hr_viewer`(비밀번호 `1234`)를 **한 문장으로** 만들고, `bom_lab`에 접속할 수 있게 하세요. `hr_viewer` 창에서 `SELECT current_user;`로 확인합니다.
+**[복습]** 생산 데이터 조회용 계정 `bom_viewer`(비밀번호 `1234`)를 **한 문장으로** 만들고, `bom_lab`에 접속할 수 있게 하세요. `bom_viewer` 창에서 `SELECT current_user;`로 확인합니다.
 
-**[응용]** 동료가 `hr_viewer`로 접속하다가 아래 두 오류를 차례로 만났습니다. 각각의 원인과 관리자가 실행할 해결 명령을 쓰세요.
+**[응용]** 동료가 `bom_viewer`로 접속하다가 아래 두 오류를 차례로 만났습니다. 각각의 원인과 관리자가 실행할 해결 명령을 쓰세요.
 
 ```error
-FATAL:  role "hr_viewer" is not permitted to log in
+FATAL:  role "bom_viewer" is not permitted to log in
 ```
 
 ```error
@@ -291,26 +293,26 @@ DETAIL:  User does not have CONNECT privilege.
 
 :::answer [복습] 예시 답안
 ```sql postgres 창
-CREATE USER hr_viewer PASSWORD '1234';
-GRANT CONNECT ON DATABASE bom_lab TO hr_viewer;
+CREATE USER bom_viewer PASSWORD '1234';
+GRANT CONNECT ON DATABASE bom_lab TO bom_viewer;
 ```
 
-```sql hr_viewer 창
+```sql bom_viewer 창
 SELECT current_user;
 ```
 
 ```result
 | current_user |
 | --- |
-| hr_viewer |
+| bom_viewer |
 ```
 
-`CREATE ROLE`로 만들었다면 `LOGIN`을 함께 적어야 합니다(`CREATE ROLE hr_viewer LOGIN PASSWORD '1234';`).
+`CREATE ROLE`로 만들었다면 `LOGIN`을 함께 적어야 합니다(`CREATE ROLE bom_viewer LOGIN PASSWORD '1234';`).
 :::
 
 :::answer [응용] 예시 답안
-- 첫 번째: `CREATE ROLE`로 만들어 **LOGIN 속성이 없음** → `ALTER ROLE hr_viewer LOGIN;`
-- 두 번째: LOGIN은 되지만 `bom_lab`의 **CONNECT 권한이 없음**(PUBLIC 권한을 회수했기 때문) → `GRANT CONNECT ON DATABASE bom_lab TO hr_viewer;`
+- 첫 번째: `CREATE ROLE`로 만들어 **LOGIN 속성이 없음** → `ALTER ROLE bom_viewer LOGIN;`
+- 두 번째: LOGIN은 되지만 `bom_lab`의 **CONNECT 권한이 없음**(PUBLIC 권한을 회수했기 때문) → `GRANT CONNECT ON DATABASE bom_lab TO bom_viewer;`
 
 접속은 「① 롤이 로그인할 수 있는가 → ② 그 DB에 들어갈 수 있는가」 두 단계로 검사됩니다.
 :::
@@ -319,39 +321,39 @@ SELECT current_user;
 
 ### 3-1. USAGE — 스키마에 들어갈 권한 {keep}
 
-`dcl_test`로 접속은 되었습니다. 이제 부품 마스터를 조회해 봅니다.
+`dcl_test`로 접속은 되었습니다. 이제 직원ID가 100인 직원을 조회해 봅니다.
 
 ```sql dcl_test 창
-SELECT part_no, description_kr, uit
-  FROM bom.part_master
- WHERE part_no = 'EMT73633001';
+SELECT employee_id, first_name, last_name, phone_number
+  FROM hr.employees
+ WHERE employee_id = 100;
 ```
 
 ```error
-ERROR:  permission denied for schema bom
-LINE 1: SELECT part_no, description_kr, uit FROM bom.part_master WHE...
-                                                 ^
+ERROR:  permission denied for schema hr
+LINE 2:   FROM hr.employees
+               ^
 ```
 
-테이블보다 먼저 **스키마(`bom`)** 에서 막혔습니다. 2단원 6-4에서 스키마는 **DB 안의 폴더**라고 했습니다. 폴더에 들어갈 권한이 없으면 안의 파일(테이블)을 볼 수 없습니다.
+테이블보다 먼저 **스키마(`hr`)** 에서 막혔습니다. 2단원 6-4에서 스키마는 **DB 안의 폴더**라고 했습니다. 폴더에 들어갈 권한이 없으면 안의 파일(테이블)을 볼 수 없습니다.
 
 ### 3-1. search_path를 걸어도 「테이블이 없다」고 나옵니다 {keep}
 
 :::error search_path를 걸어도 「테이블이 없다」고 나옵니다
-스키마 권한이 없는 상태에서 `SET search_path TO bom;` 후 테이블 이름만 쓰면, 오류 메시지가 달라집니다.
+스키마 권한이 없는 상태에서 `SET search_path TO hr;` 후 테이블 이름만 쓰면, 오류 메시지가 달라집니다.
 
 ```sql dcl_test 창
-SET search_path TO bom;
+SET search_path TO hr;
 
-SELECT part_no, description_kr, uit
-  FROM part_master
- WHERE part_no = 'EMT73633001';
+SELECT employee_id, first_name, last_name, phone_number
+  FROM employees
+ WHERE employee_id = 100;
 ```
 
 ```error
-ERROR:  relation "part_master" does not exist
-LINE 1: SELECT part_no, description_kr, uit FROM part_master WHERE p...
-                                                 ^
+ERROR:  relation "employees" does not exist
+LINE 2:   FROM employees
+               ^
 ```
 
 들어갈 수 없는 스키마는 테이블을 찾을 때 **건너뛰기** 때문입니다. 2단원 7-3의 「search_path를 안 걸었을 때」와 같은 메시지라서 헷갈리기 쉽습니다. ==새 계정에서 `does not exist`가 나오면 스키마 권한부터 의심==하세요.
@@ -360,7 +362,7 @@ LINE 1: SELECT part_no, description_kr, uit FROM part_master WHERE p...
 ### 3-1. 스키마 권한 주기 {keep}
 
 ```sql postgres 창
-GRANT USAGE ON SCHEMA bom TO dcl_test;
+GRANT USAGE ON SCHEMA hr TO dcl_test;
 ```
 
 ```result
@@ -368,15 +370,15 @@ GRANT
 ```
 
 ```sql dcl_test 창
-SET search_path TO bom;
+SET search_path TO hr;
 
-SELECT part_no, description_kr, uit
-  FROM part_master
- WHERE part_no = 'EMT73633001';
+SELECT employee_id, first_name, last_name, phone_number
+  FROM employees
+ WHERE employee_id = 100;
 ```
 
 ```error
-ERROR:  permission denied for table part_master
+ERROR:  permission denied for table employees
 ```
 
 이번에는 **테이블**에서 막혔습니다. 폴더에는 들어갔지만 파일을 열 권한은 따로 받아야 합니다.
@@ -388,7 +390,7 @@ GRANT 권한  ON 스키마.객체  TO 사용자;
 ```
 
 ```sql postgres 창
-GRANT SELECT ON bom.part_master TO dcl_test;
+GRANT SELECT ON hr.employees TO dcl_test;
 ```
 
 ```result
@@ -396,40 +398,40 @@ GRANT
 ```
 
 ```sql dcl_test 창
-SET search_path TO bom;
+SET search_path TO hr;
 
-SELECT part_no, description_kr, uit
-  FROM part_master
- WHERE part_no = 'EMT73633001';
+SELECT employee_id, first_name, last_name, phone_number
+  FROM employees
+ WHERE employee_id = 100;
 ```
 
 ```result
-| part_no | description_kr | uit |
-| --- | --- | --- |
-| EMT73633001 | 스테이터 | G |
+| employee_id | first_name | last_name | phone_number |
+| --- | --- | --- | --- |
+| 100 | Steven | King | 515.123.4567 |
 ```
 
-조회가 됩니다. 하지만 **받은 권한은 딱 `part_master`의 `SELECT` 하나**입니다.
+조회가 됩니다. 하지만 **받은 권한은 딱 `employees`의 `SELECT` 하나**입니다.
 
 ### 3-2. 받지 않은 권한은 모두 막힙니다 {keep}
 
 ```sql dcl_test 창
-UPDATE part_master
-   SET uit = 'D'
- WHERE part_no = 'EMT73633001';
+UPDATE employees
+   SET phone_number = '515.123.0000'
+ WHERE employee_id = 100;
 ```
 
 ```error
-ERROR:  permission denied for table part_master
+ERROR:  permission denied for table employees
 ```
 
 ```sql dcl_test 창
-SELECT vendor_code, vendor_name
-  FROM vendor;
+SELECT department_id, department_name
+  FROM departments;
 ```
 
 ```error
-ERROR:  permission denied for table vendor
+ERROR:  permission denied for table departments
 ```
 
 ```sql dcl_test 창
@@ -437,7 +439,7 @@ CREATE TABLE my_note (memo TEXT);
 ```
 
 ```error
-ERROR:  permission denied for schema bom
+ERROR:  permission denied for schema hr
 LINE 1: CREATE TABLE my_note (memo TEXT);
                      ^
 ```
@@ -446,10 +448,10 @@ LINE 1: CREATE TABLE my_note (memo TEXT);
 
 | 해 본 것 | 결과 | 이유 |
 | --- | --- | --- |
-| `part_master` 조회 | 성공 | `SELECT` 권한을 받음 |
-| `part_master` 수정 | 실패 | `UPDATE` 권한은 안 받음 |
-| `vendor` 조회 | 실패 | 권한은 **테이블마다 따로** 받음 |
-| `bom`에 테이블 만들기 | 실패 | 스키마의 `USAGE`는 「들어가기」뿐, 만들려면 `CREATE` 권한이 필요 |
+| `employees` 조회 | 성공 | `SELECT` 권한을 받음 |
+| `employees` 수정 | 실패 | `UPDATE` 권한은 안 받음 |
+| `departments` 조회 | 실패 | 권한은 **테이블마다 따로** 받음 |
+| `hr`에 테이블 만들기 | 실패 | 스키마의 `USAGE`는 「들어가기」뿐, 만들려면 `CREATE` 권한이 필요 |
 
 > `public` 스키마에 테이블을 만드는 것도 막혀 있습니다(`permission denied for schema public`). PostgreSQL 15부터 모든 사용자(PUBLIC)의 `public` 스키마 `CREATE` 권한이 기본에서 빠졌기 때문입니다.
 
@@ -466,9 +468,8 @@ LINE 1: CREATE TABLE my_note (memo TEXT);
 | `TRUNCATE` | `D` | 전체 행 비우기 |
 | `REFERENCES` | `x` | 이 테이블을 참조하는 FK 만들기 |
 | `TRIGGER` | `t` | 트리거 만들기 |
+| `MAINTAIN` | `m` | `VACUUM`·`ANALYZE` 같은 관리 작업 (PostgreSQL 17부터) |
 | `ALL` (또는 `ALL PRIVILEGES`) | — | 위 권한 전부 |
-
-> PostgreSQL 17부터는 `MAINTAIN`(약어 `m`) 권한이 추가되어, `\dp`의 권한 목록에 `m`이 더 보일 수 있습니다.
 
 ### 3-3. 데이터베이스·스키마에 주는 권한 {keep}
 
@@ -482,19 +483,19 @@ LINE 1: CREATE TABLE my_note (memo TEXT);
 ### 3-4. 권한 확인하기 ① psql `\dp` {keep}
 
 ```psql postgres 창
-\dp bom.part_master
+\dp hr.employees
 ```
 
 ```screen
-                                    Access privileges
- Schema |    Name     | Type  |     Access privileges     | Column privileges | Policies
---------+-------------+-------+---------------------------+-------------------+----------
- bom    | part_master | table | postgres=arwdDxt/postgres+|                   |
-        |             |       | dcl_test=r/postgres       |                   |
+                                   Access privileges
+ Schema |   Name    | Type  |     Access privileges      | Column privileges | Policies
+--------+-----------+-------+----------------------------+-------------------+----------
+ hr     | employees | table | postgres=arwdDxtm/postgres+|                   |
+        |           |       | dcl_test=r/postgres        |                   |
 (1 row)
 ```
 
-- `postgres=arwdDxt/postgres`: 테이블 주인(owner)인 `postgres`는 **모든 권한**(`arwdDxt`)을 가집니다. 테이블을 만든 사람이 주인이 됩니다.
+- `postgres=arwdDxtm/postgres`: 테이블 주인(owner)인 `postgres`는 **모든 권한**(`arwdDxtm`)을 가집니다. 테이블을 만든 사람이 주인이 됩니다.
 - `dcl_test=r/postgres`: `dcl_test`는 `r`(SELECT)만 받았습니다.
 
 ### 3-4. 권한 확인하기 ② 함수 · ③ information_schema {keep}
@@ -502,8 +503,8 @@ LINE 1: CREATE TABLE my_note (memo TEXT);
 **② 권한 확인 함수** — 결과가 `t`/`f`라 쿼리 안에서 쓰기 좋습니다.
 
 ```sql postgres 창
-SELECT has_table_privilege('dcl_test', 'bom.part_master', 'SELECT') AS can_select
-     , has_table_privilege('dcl_test', 'bom.part_master', 'UPDATE') AS can_update;
+SELECT has_table_privilege('dcl_test', 'hr.employees', 'SELECT') AS can_select
+     , has_table_privilege('dcl_test', 'hr.employees', 'UPDATE') AS can_update;
 ```
 
 ```result
@@ -523,17 +524,17 @@ SELECT grantee, table_schema, table_name, privilege_type
 ```result
 | grantee | table_schema | table_name | privilege_type |
 | --- | --- | --- | --- |
-| dcl_test | bom | part_master | SELECT |
+| dcl_test | hr | employees | SELECT |
 ```
 
 ### 3-5. 컬럼 권한 — 꼭 필요한 컬럼만 ⭐ {keep}
 
-**질문:** `dcl_test`가 UIT 정정 업무를 맡았습니다. `part_master`에서 **UIT만** 바꿀 수 있게 하려면?
+**질문:** `dcl_test`가 직원 연락처 정정 업무를 맡았습니다. `employees`에서 **전화번호(`phone_number`)만** 바꿀 수 있게 하려면?
 
-테이블 전체에 `UPDATE`를 주면 품명·상태 코드까지 바꿀 수 있습니다. 권한 뒤에 **(컬럼)** 을 적으면 그 컬럼만 허용합니다.
+테이블 전체에 `UPDATE`를 주면 급여·부서까지 바꿀 수 있습니다. 권한 뒤에 **(컬럼)** 을 적으면 그 컬럼만 허용합니다.
 
 ```sql postgres 창
-GRANT UPDATE (uit) ON bom.part_master TO dcl_test;
+GRANT UPDATE (phone_number) ON hr.employees TO dcl_test;
 ```
 
 ```result
@@ -541,47 +542,49 @@ GRANT
 ```
 
 ```psql postgres 창
-\dp bom.part_master
+\dp hr.employees
 ```
 
 ```screen
-                                      Access privileges
- Schema |    Name     | Type  |     Access privileges     |   Column privileges   | Policies
---------+-------------+-------+---------------------------+-----------------------+----------
- bom    | part_master | table | postgres=arwdDxt/postgres+| uit:                 +|
-        |             |       | dcl_test=r/postgres       |   dcl_test=w/postgres |
+                                     Access privileges
+ Schema |   Name    | Type  |     Access privileges      |   Column privileges   | Policies
+--------+-----------+-------+----------------------------+-----------------------+----------
+ hr     | employees | table | postgres=arwdDxtm/postgres+| phone_number:        +|
+        |           |       | dcl_test=r/postgres        |   dcl_test=w/postgres |
 (1 row)
 ```
 
-`Column privileges` 칸에 `uit: dcl_test=w`(UIT 컬럼 UPDATE)가 생겼습니다.
+`Column privileges` 칸에 `phone_number: dcl_test=w`(전화번호 컬럼 UPDATE)가 생겼습니다.
 
-### 3-5. UIT는 바꿀 수 있습니다 {keep}
+### 3-5. 전화번호는 바꿀 수 있습니다 {keep}
 
 실습 데이터가 바뀌지 않도록 트랜잭션 안에서 해 보고 되돌립니다(Day 4 2교시).
 
 ```sql dcl_test 창
-SET search_path TO bom;
+SET search_path TO hr;
 BEGIN;
 
-UPDATE part_master
-   SET uit = 'D'
- WHERE part_no = 'EMT73633001';
+UPDATE employees
+   SET phone_number = '515.123.0000'
+ WHERE employee_id = 100;
 ```
 
 ```result
 UPDATE 1
 ```
 
+### 3-5. 바뀐 값 확인하고 되돌리기 {keep}
+
 ```sql dcl_test 창
-SELECT part_no, uit
-  FROM part_master
- WHERE part_no = 'EMT73633001';
+SELECT employee_id, phone_number
+  FROM employees
+ WHERE employee_id = 100;
 ```
 
 ```result
-| part_no | uit |
+| employee_id | phone_number |
 | --- | --- |
-| EMT73633001 | D |
+| 100 | 515.123.0000 |
 ```
 
 ```sql dcl_test 창
@@ -592,53 +595,53 @@ ROLLBACK;
 ROLLBACK
 ```
 
-### 3-5. UIT가 아닌 컬럼은 바꿀 수 없습니다 {keep}
+### 3-5. 전화번호가 아닌 컬럼은 바꿀 수 없습니다 {keep}
 
 ```sql dcl_test 창
-UPDATE part_master
-   SET description_kr = '스테이터(수입)'
- WHERE part_no = 'EMT73633001';
+UPDATE employees
+   SET salary = 30000
+ WHERE employee_id = 100;
 ```
 
 ```error
-ERROR:  permission denied for table part_master
+ERROR:  permission denied for table employees
 ```
 
 ```sql dcl_test 창
-SELECT part_no, uit
-  FROM part_master
- WHERE part_no = 'EMT73633001';
+SELECT employee_id, phone_number
+  FROM employees
+ WHERE employee_id = 100;
 ```
 
 ```result
-| part_no | uit |
+| employee_id | phone_number |
 | --- | --- |
-| EMT73633001 | G |
+| 100 | 515.123.4567 |
 ```
 
-`ROLLBACK`으로 UIT는 원래 값(G)으로 돌아왔습니다.
+`ROLLBACK`으로 전화번호는 원래 값으로 돌아왔습니다.
 
 ### 3-5. 컬럼 권한 확인 {keep}
 
 ```sql postgres 창
-SELECT has_column_privilege('dcl_test', 'bom.part_master', 'uit', 'UPDATE')            AS uit_upd
-     , has_column_privilege('dcl_test', 'bom.part_master', 'description_kr', 'UPDATE') AS desc_upd;
+SELECT has_column_privilege('dcl_test', 'hr.employees', 'phone_number', 'UPDATE') AS phone_upd
+     , has_column_privilege('dcl_test', 'hr.employees', 'salary', 'UPDATE')       AS salary_upd;
 ```
 
 ```result
-| uit_upd | desc_upd |
+| phone_upd | salary_upd |
 | --- | --- |
 | t | f |
 ```
 
-> `UPDATE … WHERE part_no = …`가 실행되려면 `uit` **UPDATE 권한**과 함께, `WHERE`에서 읽는 `part_no`의 **SELECT 권한**도 필요합니다. 위 실습에서는 3-2에서 테이블 전체 SELECT를 받아 두었기 때문에 실행되었습니다.
+> `UPDATE … WHERE employee_id = …`가 실행되려면 `phone_number` **UPDATE 권한**과 함께, `WHERE`에서 읽는 `employee_id`의 **SELECT 권한**도 필요합니다. 위 실습에서는 3-2에서 테이블 전체 SELECT를 받아 두었기 때문에 실행되었습니다.
 
 ### 3-6. ALL TABLES IN SCHEMA — 스키마의 모든 테이블에 한 번에 {keep}
 
-테이블이 17개인데 하나씩 `GRANT`하기는 번거롭습니다.
+`hr`의 테이블에 하나씩 `GRANT`하기는 번거롭습니다.
 
 ```sql postgres 창
-GRANT SELECT ON ALL TABLES IN SCHEMA bom TO dcl_test;
+GRANT SELECT ON ALL TABLES IN SCHEMA hr TO dcl_test;
 ```
 
 ```result
@@ -649,58 +652,64 @@ GRANT
 SELECT COUNT(*) AS select_ok
   FROM information_schema.role_table_grants
  WHERE grantee      = 'dcl_test'
-   AND table_schema = 'bom'
+   AND table_schema = 'hr'
    AND privilege_type = 'SELECT';
 ```
 
 ```result
 | select_ok |
 | --- |
-| 17 |
+| 8 |
 ```
 
-### 3-6. 이제 vendor도 조회됩니다 {keep}
+테이블 7개와 뷰 1개(`emp_details_view`)입니다. 「ALL TABLES」에는 **뷰도 포함**됩니다.
+
+> 7~9단원에서 만든 사본(`t_emp`, `t_dept` 등)이 `hr`에 남아 있으면 그만큼 더 많게 나옵니다.
+
+### 3-6. 이제 departments도 조회됩니다 {keep}
 
 ```sql dcl_test 창
-SELECT vendor_code, vendor_name
-  FROM bom.vendor
- WHERE is_domestic = 'N'
- ORDER BY vendor_code;
+SELECT department_id, department_name
+  FROM hr.departments
+ WHERE location_id <> 1700
+ ORDER BY department_id;
 ```
 
 ```result
-| vendor_code | vendor_name |
+| department_id | department_name |
 | --- | --- |
-| V1004 | AsiaComp Co., Ltd. |
-| V1005 | NanoChip Semiconductor |
-| V1007 | Global Steel Trading |
-| V1009 | Pacific Motor Parts |
+| 20 | Marketing |
+| 40 | Human Resources |
+| 50 | Shipping |
+| 60 | IT |
+| 70 | Public Relations |
+| 80 | Sales |
 ```
 
 > `ALL TABLES IN SCHEMA`는 **명령을 실행한 순간 있는 테이블**에만 적용됩니다. 나중에 만든 테이블은 따로 다뤄야 합니다(5-3).
 
-### 3-7. 확인 문제 — HR 데이터 {keep}
+### 3-7. 확인 문제 — 생산 데이터 {keep}
 
-> `hr_viewer`는 2-4에서 만든 계정입니다.
+> 실행 전: 생산 실습 데이터(`bom` 스키마)로 풉니다. `bom_viewer`는 2-4에서 만든 계정입니다. 3-1의 함정을 피하려고 `SET search_path` 대신 테이블 이름에 `bom.`을 붙여 씁니다.
 
 :::try
-**[복습]** `hr_viewer`가 `hr.departments`를 조회할 수 있게 권한을 주고, `hr_viewer` 창에서 부서 수를 세어 보세요. 권한 명령은 몇 개가 필요한가요?
+**[복습]** `bom_viewer`가 업체 테이블 `bom.vendor`를 조회할 수 있게 권한을 주고, `bom_viewer` 창에서 업체 수를 세어 보세요. 권한 명령은 몇 개가 필요한가요?
 
-**[응용]** 인사 담당이 아닌 `hr_viewer`에게 `hr.employees`의 급여(`salary`)와 커미션(`commission_pct`)은 **보여 주지 않고**, 나머지 9개 컬럼만 조회하게 하려고 합니다.
+**[응용]** 구매 담당이 아닌 `bom_viewer`에게 `bom.part_sourcing`(부품별 구매 조건)의 **단가(`po_price`)는 보여 주지 않고**, 나머지 7개 컬럼만 조회하게 하려고 합니다.
 ① 권한 명령을 쓰세요.
-② `hr_viewer` 창에서 아래 세 쿼리를 실행하면 각각 어떻게 되나요?
+② `bom_viewer` 창에서 아래 세 쿼리를 실행하면 각각 어떻게 되나요?
 
-```sql hr_viewer 창
-SELECT * FROM hr.employees;
+```sql bom_viewer 창
+SELECT * FROM bom.part_sourcing;
 
-SELECT employee_id, first_name, last_name, job_id
-  FROM hr.employees
- WHERE department_id = 60
- ORDER BY employee_id;
+SELECT part_no, vendor_code, currency, lead_time_days
+  FROM bom.part_sourcing
+ WHERE vendor_code = 'V1009'
+ ORDER BY part_no;
 
-SELECT first_name
-  FROM hr.employees
- WHERE salary > 10000;
+SELECT part_no
+  FROM bom.part_sourcing
+ WHERE po_price > 10000;
 ```
 :::
 
@@ -710,22 +719,22 @@ SELECT first_name
 명령 2개 — 스키마 `USAGE` + 테이블 `SELECT`
 
 ```sql postgres 창
-GRANT USAGE ON SCHEMA hr TO hr_viewer;
-GRANT SELECT ON hr.departments TO hr_viewer;
+GRANT USAGE ON SCHEMA bom TO bom_viewer;
+GRANT SELECT ON bom.vendor TO bom_viewer;
 ```
 
-```sql hr_viewer 창
-SELECT COUNT(*) AS dept_cnt
-  FROM hr.departments;
+```sql bom_viewer 창
+SELECT COUNT(*) AS vendor_cnt
+  FROM bom.vendor;
 ```
 
 ```result
-| dept_cnt |
+| vendor_cnt |
 | --- |
-| 27 |
+| 12 |
 ```
 
-`USAGE` 없이 `SELECT`만 주면 `permission denied for schema hr`가 납니다.
+`USAGE` 없이 `SELECT`만 주면 `permission denied for schema bom`이 납니다.
 :::
 
 ### 3-7. 확인 문제 답 — 응용 {keep}
@@ -734,36 +743,35 @@ SELECT COUNT(*) AS dept_cnt
 ① 컬럼 목록을 적어 `SELECT` 권한을 줍니다.
 
 ```sql postgres 창
-GRANT SELECT (employee_id, first_name, last_name, email, phone_number,
-              hire_date, job_id, manager_id, department_id)
-   ON hr.employees TO hr_viewer;
+GRANT SELECT (part_no, vendor_code, line_type, currency,
+              lead_time_days, moq, site_code)
+   ON bom.part_sourcing TO bom_viewer;
 ```
 
-② 첫 번째 — `*`에는 권한이 없는 `salary`·`commission_pct`가 포함되므로 오류입니다.
+② 첫 번째 — `*`에는 권한이 없는 `po_price`가 포함되므로 오류입니다.
 
 ```error
-ERROR:  permission denied for table employees
+ERROR:  permission denied for table part_sourcing
 ```
 
-두 번째 — 허용된 컬럼만 썼으므로 5행이 나옵니다.
+두 번째 — 허용된 컬럼만 썼으므로 4행이 나옵니다.
 
 ```result
-| employee_id | first_name | last_name | job_id |
+| part_no | vendor_code | currency | lead_time_days |
 | --- | --- | --- | --- |
-| 103 | Alexander | Hunold | IT_PROG |
-| 104 | Bruce | Ernst | IT_PROG |
-| 105 | David | Austin | IT_PROG |
-| 106 | Valli | Pataballa | IT_PROG |
-| 107 | Diana | Lorentz | IT_PROG |
+| EFN66589301 | V1009 | USD | 40 |
+| EMT73633001 | V1009 | KRW | 30 |
+| EMT78269001 | V1009 | USD | 30 |
+| MBR26166001 | V1009 | USD | 30 |
 ```
 
-세 번째 — `SELECT` 절에는 `first_name`만 있지만 `WHERE`에서 `salary`를 **읽기** 때문에 오류입니다.
+세 번째 — `SELECT` 절에는 `part_no`만 있지만 `WHERE`에서 `po_price`를 **읽기** 때문에 오류입니다.
 
 ```error
-ERROR:  permission denied for table employees
+ERROR:  permission denied for table part_sourcing
 ```
 
-==보지 못하게 한 컬럼은 조건(WHERE)으로도 쓸 수 없습니다.== 조건에 쓸 수 있으면 「급여가 10000보다 큰 사람」을 알아낼 수 있기 때문입니다.
+==보지 못하게 한 컬럼은 조건(WHERE)으로도 쓸 수 없습니다.== 조건에 쓸 수 있으면 「단가가 10000보다 큰 부품」을 알아낼 수 있기 때문입니다.
 :::
 
 ## 4. REVOKE — 권한 회수
@@ -777,7 +785,7 @@ REVOKE 권한  ON 스키마.객체  FROM 사용자;
 `GRANT … TO`와 모양이 같고, `TO` 대신 **`FROM`** 을 씁니다. 3장에서 준 테이블 권한을 회수합니다.
 
 ```sql postgres 창
-REVOKE UPDATE (uit) ON bom.part_master FROM dcl_test;
+REVOKE UPDATE (phone_number) ON hr.employees FROM dcl_test;
 ```
 
 ```result
@@ -785,7 +793,7 @@ REVOKE
 ```
 
 ```sql postgres 창
-REVOKE SELECT ON ALL TABLES IN SCHEMA bom FROM dcl_test;
+REVOKE SELECT ON ALL TABLES IN SCHEMA hr FROM dcl_test;
 ```
 
 ```result
@@ -798,7 +806,7 @@ REVOKE
 SELECT COUNT(*) AS select_ok
   FROM information_schema.role_table_grants
  WHERE grantee      = 'dcl_test'
-   AND table_schema = 'bom';
+   AND table_schema = 'hr';
 ```
 
 ```result
@@ -808,14 +816,14 @@ SELECT COUNT(*) AS select_ok
 ```
 
 ```psql postgres 창
-\dp bom.part_master
+\dp hr.employees
 ```
 
 ```screen
-                                    Access privileges
- Schema |    Name     | Type  |     Access privileges     | Column privileges | Policies
---------+-------------+-------+---------------------------+-------------------+----------
- bom    | part_master | table | postgres=arwdDxt/postgres |                   |
+                                   Access privileges
+ Schema |   Name    | Type  |     Access privileges      | Column privileges | Policies
+--------+-----------+-------+----------------------------+-------------------+----------
+ hr     | employees | table | postgres=arwdDxtm/postgres |                   |
 (1 row)
 ```
 
@@ -823,19 +831,19 @@ SELECT COUNT(*) AS select_ok
 
 ```sql dcl_test 창
 SELECT COUNT(*)
-  FROM bom.part_master;
+  FROM hr.employees;
 ```
 
 ```error
-ERROR:  permission denied for table part_master
+ERROR:  permission denied for table employees
 ```
 
-`part_master`의 SELECT는 3-2에서 따로 한 번, 3-6에서 `ALL TABLES`로 한 번 더 주었지만, 회수는 한 번으로 끝났습니다. 같은 권한을 여러 번 주어도 **권한은 하나**로 기록됩니다.
+`employees`의 SELECT는 3-2에서 따로 한 번, 3-6에서 `ALL TABLES`로 한 번 더 주었지만, 회수는 한 번으로 끝났습니다. 같은 권한을 여러 번 주어도 **권한은 하나**로 기록됩니다.
 
 ### 4-2. 없는 권한을 회수해도 오류가 나지 않습니다 {keep}
 
 ```sql postgres 창
-REVOKE DELETE ON bom.part_master FROM dcl_test;
+REVOKE DELETE ON hr.employees FROM dcl_test;
 ```
 
 ```result
@@ -848,11 +856,11 @@ REVOKE
 
 ### 5-1. 롤로 권한을 묶는 이유 {keep}
 
-생산관리팀 10명에게 「`bom` 전체 조회」 권한을 줘야 한다면, 사람마다 `USAGE` + `SELECT ON ALL TABLES`를 반복해야 합니다. 권한을 **롤 하나에 묶어 두고 그 롤을 부여**하면 한 번에 끝납니다.
+인사팀 10명에게 「`hr` 전체 조회」 권한을 줘야 한다면, 사람마다 `USAGE` + `SELECT ON ALL TABLES`를 반복해야 합니다. 권한을 **롤 하나에 묶어 두고 그 롤을 부여**하면 한 번에 끝납니다.
 
 ```flow 사용자 ← 롤(권한 묶음) ← 권한들
 key-round | 권한들 | USAGE · SELECT | ivory
-users | 롤 | bom_reader | plum
+users | 롤 | hr_read | plum
 user | 사용자 | dcl_test | hot
 ```
 
@@ -861,20 +869,20 @@ user | 사용자 | dcl_test | hot
 ① 롤 만들기 (`CREATE ROLE`이므로 접속 불가 롤)
 
 ```sql postgres 창
-CREATE ROLE bom_reader;
+CREATE ROLE hr_read;
 ```
 
 ② 롤에 권한 주기
 
 ```sql postgres 창
-GRANT USAGE ON SCHEMA bom TO bom_reader;
-GRANT SELECT ON ALL TABLES IN SCHEMA bom TO bom_reader;
+GRANT USAGE ON SCHEMA hr TO hr_read;
+GRANT SELECT ON ALL TABLES IN SCHEMA hr TO hr_read;
 ```
 
 ③ 사용자에게 롤 주기 — `ON 객체`가 없습니다.
 
 ```sql postgres 창
-GRANT bom_reader TO dcl_test;
+GRANT hr_read TO dcl_test;
 ```
 
 ```result
@@ -886,16 +894,18 @@ GRANT ROLE
 ```sql postgres 창
 SELECT rolname, rolcanlogin
   FROM pg_roles
- WHERE rolname IN ('bom_reader', 'dcl_test')
+ WHERE rolname IN ('hr_read', 'dcl_test')
  ORDER BY rolname;
 ```
 
 ```result
 | rolname | rolcanlogin |
 | --- | --- |
-| bom_reader | f |
 | dcl_test | t |
+| hr_read | f |
 ```
+
+### 5-1. 롤 멤버십 확인 {keep}
 
 누가 어느 롤의 구성원인지(롤 멤버십)는 `pg_auth_members`에서 봅니다.
 
@@ -905,46 +915,49 @@ SELECT r.rolname AS role_name
   FROM pg_auth_members a
   JOIN pg_roles r ON r.oid = a.roleid
   JOIN pg_roles m ON m.oid = a.member
- WHERE r.rolname = 'bom_reader';
+ WHERE r.rolname = 'hr_read';
 ```
 
 ```result
 | role_name | member_name |
 | --- | --- |
-| bom_reader | dcl_test |
+| hr_read | dcl_test |
 ```
 
-### 5-1. psql `\du` · 롤로 다시 조회 {keep}
+### 5-1. psql `\du`로 롤 보기 {keep}
 
 ```psql postgres 창
 \du
 ```
 
 ```screen
-                              List of roles
- Role name  |                         Attributes
-------------+------------------------------------------------------------
- bom_reader | Cannot login
- dcl_test   |
- postgres   | Superuser, Create role, Create DB, Replication, Bypass RLS
+                             List of roles
+ Role name |                         Attributes
+-----------+------------------------------------------------------------
+ dcl_test  |
+ hr_read   | Cannot login
+ postgres  | Superuser, Create role, Create DB, Replication, Bypass RLS
 ```
 
-> 확인 문제를 풀었다면 `hr_viewer`도 목록에 보입니다.
+> 확인 문제를 풀었다면 `bom_viewer`도 목록에 보입니다.
+
+### 5-1. 롤로 다시 조회 {keep}
 
 4장에서 테이블 권한을 모두 회수했지만, 롤을 통해 다시 조회됩니다.
 
 ```sql dcl_test 창
-SELECT model_part_no, SUM(plan_qty) AS total_plan
-  FROM bom.production_plan
- GROUP BY model_part_no
- ORDER BY model_part_no;
+SELECT department_id, COUNT(*) AS emp_cnt
+  FROM hr.employees
+ WHERE department_id IN (50, 80)
+ GROUP BY department_id
+ ORDER BY department_id;
 ```
 
 ```result
-| model_part_no | total_plan |
+| department_id | emp_cnt |
 | --- | --- |
-| TRF38316001 | 3460 |
-| TWM61868701 | 4520 |
+| 50 | 45 |
+| 80 | 34 |
 ```
 
 ### 5-1. 권한을 주는 세 가지 모양 {keep}
@@ -957,10 +970,10 @@ SELECT model_part_no, SUM(plan_qty) AS total_plan
 
 ### 5-2. 직접 회수해도 롤로 받은 권한은 남습니다 {keep}
 
-`dcl_test`는 3-1에서 `bom` 스키마 `USAGE`를 **직접** 받았고, 5-1에서 `bom_reader` 롤로 **한 번 더** 받았습니다. 직접 받은 것만 회수해 봅니다.
+`dcl_test`는 3-1에서 `hr` 스키마 `USAGE`를 **직접** 받았고, 5-1에서 `hr_read` 롤로 **한 번 더** 받았습니다. 직접 받은 것만 회수해 봅니다.
 
 ```sql postgres 창
-REVOKE USAGE ON SCHEMA bom FROM dcl_test;
+REVOKE USAGE ON SCHEMA hr FROM dcl_test;
 ```
 
 ```result
@@ -968,7 +981,7 @@ REVOKE
 ```
 
 ```sql postgres 창
-SELECT has_schema_privilege('dcl_test', 'bom', 'USAGE') AS usage_ok;
+SELECT has_schema_privilege('dcl_test', 'hr', 'USAGE') AS usage_ok;
 ```
 
 ```result
@@ -977,39 +990,39 @@ SELECT has_schema_privilege('dcl_test', 'bom', 'USAGE') AS usage_ok;
 | t |
 ```
 
-여전히 `t`입니다. `bom_reader`의 구성원이라 **롤의 권한을 물려받기** 때문입니다. 권한을 완전히 막으려면 ==직접 준 권한과 롤 멤버십을 모두 확인==해야 합니다(`REVOKE bom_reader FROM dcl_test;`).
+여전히 `t`입니다. `hr_read`의 구성원이라 **롤의 권한을 물려받기** 때문입니다. 권한을 완전히 막으려면 ==직접 준 권한과 롤 멤버십을 모두 확인==해야 합니다(`REVOKE hr_read FROM dcl_test;`).
 
 ### 5-3. 나중에 만든 테이블에는 권한이 없습니다 ⭐ {keep}
 
-Day 4 1교시처럼 관리자가 연습용 사본 테이블을 새로 만들었습니다.
+Day 4 1교시(8단원)처럼 관리자가 연습용 사본 테이블을 새로 만들었습니다.
 
 ```sql postgres 창
-CREATE TABLE bom.part_master_copy AS
-SELECT * FROM bom.part_master;
+CREATE TABLE hr.employees_copy AS
+SELECT * FROM hr.employees;
 ```
 
 ```result
-SELECT 68
+SELECT 107
 ```
 
 ```sql dcl_test 창
 SELECT COUNT(*) AS cnt
-  FROM bom.part_master_copy;
+  FROM hr.employees_copy;
 ```
 
 ```error
-ERROR:  permission denied for table part_master_copy
+ERROR:  permission denied for table employees_copy
 ```
 
-`bom_reader`에 준 `SELECT ON ALL TABLES IN SCHEMA bom`은 **5-1을 실행한 순간의 17개 테이블**에만 적용되었기 때문입니다.
+`hr_read`에 준 `SELECT ON ALL TABLES IN SCHEMA hr`는 **5-1을 실행한 순간 있던 테이블**에만 적용되었기 때문입니다.
 
 ### 5-3. ALTER DEFAULT PRIVILEGES — 앞으로 만들 테이블에도 {keep}
 
 앞으로 만들 테이블에도 권한이 자동으로 붙게 하려면 **기본 권한**을 정해 둡니다.
 
 ```sql postgres 창
-ALTER DEFAULT PRIVILEGES IN SCHEMA bom
-GRANT SELECT ON TABLES TO bom_reader;
+ALTER DEFAULT PRIVILEGES IN SCHEMA hr
+GRANT SELECT ON TABLES TO hr_read;
 ```
 
 ```result
@@ -1017,51 +1030,51 @@ ALTER DEFAULT PRIVILEGES
 ```
 
 ```sql postgres 창
-CREATE TABLE bom.inventory_copy AS
-SELECT * FROM bom.inventory;
+CREATE TABLE hr.departments_copy AS
+SELECT * FROM hr.departments;
 ```
 
 ```result
-SELECT 53
+SELECT 27
 ```
 
 ```sql postgres 창
-SELECT has_table_privilege('bom_reader', 'bom.part_master_copy', 'SELECT') AS part_copy
-     , has_table_privilege('bom_reader', 'bom.inventory_copy',   'SELECT') AS inv_copy;
+SELECT has_table_privilege('hr_read', 'hr.employees_copy',   'SELECT') AS emp_copy
+     , has_table_privilege('hr_read', 'hr.departments_copy', 'SELECT') AS dept_copy;
 ```
 
 ```result
-| part_copy | inv_copy |
+| emp_copy | dept_copy |
 | --- | --- |
 | f | t |
 ```
 
 ### 5-3. 기존 테이블에는 소급되지 않습니다 {keep}
 
-| 테이블 | 만든 시점 | `bom_reader` 조회 |
+| 테이블 | 만든 시점 | `hr_read` 조회 |
 | --- | --- | --- |
-| `part_master_copy` | 기본 권한 설정 **전** | 불가 (기존 테이블에는 소급되지 않음) |
-| `inventory_copy` | 기본 권한 설정 **후** | 가능 |
+| `employees_copy` | 기본 권한 설정 **전** | 불가 (기존 테이블에는 소급되지 않음) |
+| `departments_copy` | 기본 권한 설정 **후** | 가능 |
 
 ```psql postgres 창
 \ddp
 ```
 
 ```screen
-             Default access privileges
-  Owner   | Schema | Type  |   Access privileges
-----------+--------+-------+-----------------------
- postgres | bom    | table | bom_reader=r/postgres
+           Default access privileges
+  Owner   | Schema | Type  | Access privileges
+----------+--------+-------+--------------------
+ postgres | hr     | table | hr_read=r/postgres
 (1 row)
 ```
 
 - `ALTER DEFAULT PRIVILEGES`는 ==명령을 실행한 롤(여기서는 `postgres`)이 앞으로 만드는 객체==에 적용됩니다. 다른 롤이 만드는 테이블에도 적용하려면 `FOR ROLE 그롤`을 붙입니다.
-- 이미 있는 `part_master_copy`는 `GRANT SELECT ON bom.part_master_copy TO bom_reader;`로 따로 줍니다.
+- 이미 있는 `employees_copy`는 `GRANT SELECT ON hr.employees_copy TO hr_read;`로 따로 줍니다.
 
 실습용 사본은 지웁니다.
 
 ```sql postgres 창
-DROP TABLE bom.part_master_copy, bom.inventory_copy;
+DROP TABLE hr.employees_copy, hr.departments_copy;
 ```
 
 ### 5-4. 참고 — 미리 정의된 롤 {keep}
@@ -1087,63 +1100,64 @@ SELECT rolname
 | `pg_read_all_data` | 모든 테이블·뷰·시퀀스에 `SELECT`, 모든 스키마에 `USAGE`가 있는 것처럼 동작 |
 | `pg_write_all_data` | 모든 테이블·뷰·시퀀스에 `INSERT`·`UPDATE`·`DELETE`, 모든 스키마에 `USAGE`가 있는 것처럼 동작 |
 
-편리하지만 **DB 전체**에 적용됩니다. 이 수업처럼 `bom`과 `hr`을 나눠 관리하려면 5-1처럼 직접 만든 롤이 더 알맞습니다.
+편리하지만 **DB 전체**에 적용됩니다. 이 수업처럼 `hr`과 `bom`을 나눠 관리하려면 5-1처럼 직접 만든 롤이 더 알맞습니다.
 
-### 5-5. 확인 문제 — HR 데이터 {keep}
+### 5-5. 확인 문제 — 생산 데이터 {keep}
+
+> 실행 전: 생산 실습 데이터(`bom` 스키마)로 풉니다. 테이블 이름에 `bom.`을 붙여 씁니다.
 
 :::try
-**[복습]** `hr` 스키마 전체 조회용 롤 `hr_read`를 만들어 `hr_viewer`에게 부여하세요. 그다음 `hr_viewer` 창에서 60번 부서 직원의 이름과 급여를 급여가 높은 순(같으면 이름 순)으로 출력합니다. (3-7에서는 급여를 볼 수 없었습니다.)
+**[복습]** `bom` 스키마 전체 조회용 롤 `bom_reader`를 만들어 `bom_viewer`에게 부여하세요. 그다음 `bom_viewer` 창에서 업체 `V1009`에서 사 오는 부품의 품번·통화·단가를 품번 순으로 출력합니다. (3-7에서는 단가를 볼 수 없었습니다.)
 
-**[응용]** 관리자가 `hr_viewer`의 부서 조회를 막으려고 아래 명령을 실행했습니다.
+**[응용]** 관리자가 `bom_viewer`의 업체 조회를 막으려고 아래 명령을 실행했습니다.
 
 ```sql postgres 창
-REVOKE SELECT ON hr.departments FROM hr_viewer;
+REVOKE SELECT ON bom.vendor FROM bom_viewer;
 ```
 
-그런데 `hr_viewer`는 여전히 `hr.departments`를 조회할 수 있습니다. 이유를 설명하고, 부서 조회를 실제로 막는 명령을 쓰세요. 그 명령 뒤에도 `hr_viewer`가 `employees`의 `first_name`은 볼 수 있는 이유도 설명하세요.
+그런데 `bom_viewer`는 여전히 `bom.vendor`를 조회할 수 있습니다. 이유를 설명하고, 업체 조회를 실제로 막는 명령을 쓰세요. 그 명령 뒤에도 `bom_viewer`가 `part_sourcing`의 `part_no`는 볼 수 있는 이유도 설명하세요.
 :::
 
 ### 5-5. 확인 문제 답 — 복습 {keep}
 
-:::answer [복습] 예시 답안 (5행)
+:::answer [복습] 예시 답안 (4행)
 ```sql postgres 창
-CREATE ROLE hr_read;
-GRANT USAGE ON SCHEMA hr TO hr_read;
-GRANT SELECT ON ALL TABLES IN SCHEMA hr TO hr_read;
-GRANT hr_read TO hr_viewer;
+CREATE ROLE bom_reader;
+GRANT USAGE ON SCHEMA bom TO bom_reader;
+GRANT SELECT ON ALL TABLES IN SCHEMA bom TO bom_reader;
+GRANT bom_reader TO bom_viewer;
 ```
 
-```sql hr_viewer 창
-SELECT first_name, salary
-  FROM hr.employees
- WHERE department_id = 60
- ORDER BY salary DESC, first_name;
+```sql bom_viewer 창
+SELECT part_no, currency, po_price
+  FROM bom.part_sourcing
+ WHERE vendor_code = 'V1009'
+ ORDER BY part_no;
 ```
 
 ```result
-| first_name | salary |
-| --- | --- |
-| Alexander | 9000.00 |
-| Bruce | 6000.00 |
-| David | 4800.00 |
-| Valli | 4800.00 |
-| Diana | 4200.00 |
+| part_no | currency | po_price |
+| --- | --- | --- |
+| EFN66589301 | USD | 6.20 |
+| EMT73633001 | KRW | 28000.00 |
+| EMT78269001 | USD | 14.00 |
+| MBR26166001 | USD | 1.90 |
 ```
 :::
 
 ### 5-5. 확인 문제 답 — 응용 {keep}
 
 :::answer [응용] 예시 답안
-`hr_viewer`는 `hr_read` 롤의 구성원이라, 직접 받은 권한을 회수해도 **롤로 받은 `SELECT`** 가 남아 있습니다(5-2).
+`bom_viewer`는 `bom_reader` 롤의 구성원이라, 직접 받은 권한을 회수해도 **롤로 받은 `SELECT`** 가 남아 있습니다(5-2).
 
 ```sql postgres 창
-REVOKE SELECT ON hr.departments FROM hr_viewer;
+REVOKE SELECT ON bom.vendor FROM bom_viewer;
 
-SELECT has_table_privilege('hr_viewer', 'hr.departments', 'SELECT') AS dept_select;
+SELECT has_table_privilege('bom_viewer', 'bom.vendor', 'SELECT') AS vendor_select;
 ```
 
 ```result
-| dept_select |
+| vendor_select |
 | --- |
 | t |
 ```
@@ -1151,48 +1165,48 @@ SELECT has_table_privilege('hr_viewer', 'hr.departments', 'SELECT') AS dept_sele
 롤 멤버십을 회수합니다.
 
 ```sql postgres 창
-REVOKE hr_read FROM hr_viewer;
+REVOKE bom_reader FROM bom_viewer;
 
-SELECT has_table_privilege('hr_viewer', 'hr.departments', 'SELECT')              AS dept_select
-     , has_column_privilege('hr_viewer', 'hr.employees', 'salary', 'SELECT')     AS salary_select
-     , has_column_privilege('hr_viewer', 'hr.employees', 'first_name', 'SELECT') AS name_select;
+SELECT has_table_privilege('bom_viewer', 'bom.vendor', 'SELECT')                    AS vendor_select
+     , has_column_privilege('bom_viewer', 'bom.part_sourcing', 'po_price', 'SELECT') AS price_select
+     , has_column_privilege('bom_viewer', 'bom.part_sourcing', 'part_no', 'SELECT')  AS part_select;
 ```
 
 ```result
-| dept_select | salary_select | name_select |
+| vendor_select | price_select | part_select |
 | --- | --- | --- |
 | f | f | t |
 ```
 
-```sql hr_viewer 창
-SELECT COUNT(*) AS dept_cnt
-  FROM hr.departments;
+```sql bom_viewer 창
+SELECT COUNT(*) AS vendor_cnt
+  FROM bom.vendor;
 ```
 
 ```error
-ERROR:  permission denied for table departments
+ERROR:  permission denied for table vendor
 ```
 
-`first_name`은 3-7 [응용]에서 `hr_viewer`에게 **직접** 준 컬럼 권한이라 롤을 회수해도 남습니다. 반대로 `salary`는 롤로만 받았던 권한이라 다시 볼 수 없게 되었습니다.
+`part_no`는 3-7 [응용]에서 `bom_viewer`에게 **직접** 준 컬럼 권한이라 롤을 회수해도 남습니다. 반대로 `po_price`는 롤로만 받았던 권한이라 다시 볼 수 없게 되었습니다.
 :::
 
 ## 6. 실무 — 에이전트 계정과 승인자 계정 나누기
 
 ### 6-1. 누가 무엇을 해야 하나 {keep}
 
-Day 4의 「**조회 → 판단 → 승인 → 기록**」 흐름을 계정으로 나눠 봅니다. 이상 데이터(해외 업체인데 UIT가 G)인 스테이터(`EMT73633001`)를 Q13처럼 정정하는 상황입니다.
+Day 4의 「**조회 → 판단 → 승인 → 기록**」 흐름을 계정으로 나눠 봅니다. 부서가 비어 있는 직원 178(Kimberely Grant, 5단원 3-3)을 영업 부서(80)에 배정하는 상황입니다.
 
 | 계정 | 맡은 일 | 줄 권한 | 주지 않을 권한 |
 | --- | --- | --- | --- |
-| `agent_bot` | 데이터를 **조회**해 이상을 판단 (Day 4 6교시 `check_shortage` 같은 도구가 이 계정으로 접속) | `bom_reader` | 마스터 수정, 이력 기록 |
-| `mat_staff` | 판단을 보고 **승인**한 뒤 UIT를 정정하고 **이력을 기록** (Q13) | `bom_reader` + `part_master.uit` UPDATE + `uit_change_history` INSERT | 다른 컬럼 수정, 이력 수정·삭제 |
-| (누구도) | — | — | `uit_change_history`의 **UPDATE·DELETE** (이력 덮어쓰기 금지, Day 4 4교시) |
+| `hr_bot` | 데이터를 **조회**해 이상을 판단 (에이전트 도구가 이 계정으로 접속) | `hr_read` | 직원 정보 수정, 이력 기록 |
+| `hr_staff` | 판단을 보고 **승인**한 뒤 부서를 배정하고 **이력을 기록** | `hr_read` + `employees.department_id` UPDATE + `job_history` INSERT | 급여 등 다른 컬럼 수정, 이력 수정·삭제 |
+| (누구도) | — | — | `job_history`의 **UPDATE·DELETE** (이력 덮어쓰기 금지) |
 
 ### 6-2. 계정 만들고 권한 주기 {keep}
 
 ```sql postgres 창
-CREATE USER agent_bot PASSWORD 'agent1234';
-CREATE USER mat_staff PASSWORD 'staff1234';
+CREATE USER hr_bot   PASSWORD 'bot1234';
+CREATE USER hr_staff PASSWORD 'staff1234';
 ```
 
 ```result
@@ -1203,10 +1217,10 @@ CREATE ROLE
 `CREATE USER`도 결과 메시지는 `CREATE ROLE`입니다(2-2).
 
 ```sql postgres 창
-GRANT CONNECT ON DATABASE bom_lab TO agent_bot, mat_staff;
-GRANT bom_reader TO agent_bot, mat_staff;
-GRANT UPDATE (uit) ON bom.part_master TO mat_staff;
-GRANT INSERT ON bom.uit_change_history TO mat_staff;
+GRANT CONNECT ON DATABASE bom_lab TO hr_bot, hr_staff;
+GRANT hr_read TO hr_bot, hr_staff;
+GRANT UPDATE (department_id) ON hr.employees TO hr_staff;
+GRANT INSERT ON hr.job_history TO hr_staff;
 ```
 
 ```result
@@ -1218,155 +1232,130 @@ GRANT
 
 `TO` 뒤에 사용자를 쉼표로 여러 명 적을 수 있습니다.
 
-### 6-3. agent_bot — 조회는 됩니다 {keep}
+### 6-3. hr_bot — 조회는 됩니다 {keep}
 
-```sql agent_bot 창
-SET search_path TO bom;
+```sql hr_bot 창
+SET search_path TO hr;
 
-SELECT p.part_no, p.description_kr, p.uit
-     , s.vendor_code, v.is_domestic, s.line_type
-  FROM part_master p
-  JOIN part_sourcing s ON s.part_no = p.part_no
-  JOIN vendor v        ON v.vendor_code = s.vendor_code
- WHERE p.part_no = 'EMT73633001';
+SELECT e.employee_id, e.first_name, e.last_name
+     , e.job_id, j.job_title, e.department_id
+  FROM employees e
+  JOIN jobs j ON j.job_id = e.job_id
+ WHERE e.department_id IS NULL;
 ```
 
 ```result
-| part_no | description_kr | uit | vendor_code | is_domestic | line_type |
+| employee_id | first_name | last_name | job_id | job_title | department_id |
 | --- | --- | --- | --- | --- | --- |
-| EMT73633001 | 스테이터 | G | V1009 | N | D |
+| 178 | Kimberely | Grant | SA_REP | Sales Representative | NULL |
 ```
 
-해외 업체(`is_domestic = 'N'`)인데 UIT가 G(국내 구매품)입니다. 에이전트는 여기까지 **판단**할 수 있습니다.
+영업 사원(`SA_REP`)인데 부서가 비어 있습니다. 에이전트는 여기까지 **판단**할 수 있습니다.
 
-> Q13을 이미 `COMMIT`한 PC에서는 UIT가 이미 D로 나오고, 6-4의 이력도 한 행 더 나옵니다.
+### 6-3. hr_bot — 바꾸지는 못합니다 {keep}
 
-### 6-3. agent_bot — 바꾸지는 못합니다 {keep}
-
-```sql agent_bot 창
-UPDATE part_master
-   SET uit = 'D'
- WHERE part_no = 'EMT73633001';
-```
-
-```error
-ERROR:  permission denied for table part_master
-```
-
-```sql agent_bot 창
-INSERT INTO uit_change_history
-VALUES (6, 'EMT73633001', 'G', 'D', 'AI Agent', '해외 벤더 조달 확인', CURRENT_DATE, 'N');
+```sql hr_bot 창
+UPDATE employees
+   SET department_id = 80
+ WHERE employee_id = 178;
 ```
 
 ```error
-ERROR:  permission denied for table uit_change_history
+ERROR:  permission denied for table employees
+```
+
+```sql hr_bot 창
+INSERT INTO job_history
+VALUES (178, DATE '2007-05-24', CURRENT_DATE, 'SA_REP', NULL);
+```
+
+```error
+ERROR:  permission denied for table job_history
 ```
 
 ==에이전트 코드에 실수가 있거나 엉뚱한 SQL을 만들어 내도, DB가 권한으로 막아 줍니다.==
 
-### 6-4. mat_staff — 승인 후 정정과 기록 {keep}
+### 6-4. hr_staff — 승인 후 부서 배정과 기록 {keep}
 
-Q13과 같은 「UIT 정정 + 이력 INSERT」를 한 트랜잭션으로 실행합니다. 실습 데이터를 그대로 두기 위해 마지막에 `ROLLBACK`합니다.
+실습 데이터를 그대로 두기 위해 트랜잭션 안에서 실행하고 마지막에 `ROLLBACK`합니다.
 
-```sql mat_staff 창
-SET search_path TO bom;
+```sql hr_staff 창
+SET search_path TO hr;
 BEGIN;
 
-UPDATE part_master
-   SET uit = 'D'
- WHERE part_no = 'EMT73633001';
+UPDATE employees
+   SET department_id = 80
+ WHERE employee_id = 178;
 ```
 
 ```result
 UPDATE 1
 ```
 
-```sql mat_staff 창
-INSERT INTO uit_change_history
-SELECT MAX(change_id) + 1, 'EMT73633001', 'G', 'D', 'Procurement',
-       '해외 벤더 조달 확인, UIT 정정', CURRENT_DATE, 'N'
-  FROM uit_change_history;
+### 6-4. 트리거가 남긴 이력 {keep}
+
+`hr`의 `employees`에는 직무·부서가 바뀌면 **이전 직무·부서를 `job_history`에 INSERT하는 트리거**(`update_job_history`)가 있습니다. 이 INSERT는 UPDATE를 실행한 `hr_staff`의 권한으로 실행되므로, `job_history` INSERT 권한이 없으면 위 UPDATE가 `permission denied for table job_history`로 실패합니다.
+
+```sql hr_staff 창
+SELECT employee_id, start_date, job_id, department_id
+  FROM job_history
+ WHERE employee_id = 178;
 ```
 
 ```result
-INSERT 0 1
+| employee_id | start_date | job_id | department_id |
+| --- | --- | --- | --- |
+| 178 | 2007-05-24 | SA_REP | NULL |
 ```
 
-> `change_id`를 `MAX(change_id) + 1`로 구한 이유: Q13을 이미 `COMMIT`한 PC에는 6번이 있어 `6`을 직접 적으면 PK 중복 오류가 납니다. 이 방식은 Q13 실행 여부와 상관없이 동작합니다.
-
-### 6-4. 기록 확인 후 되돌리기 {keep}
-
-```sql mat_staff 창
-SELECT change_id, part_no, old_uit, new_uit, changed_by_dept
-  FROM uit_change_history
- ORDER BY change_id;
-```
-
-```result
-| change_id | part_no | old_uit | new_uit | changed_by_dept |
-| --- | --- | --- | --- | --- |
-| 1 | EBA56264701 | T | G | Manufacturing Engineering |
-| 2 | EMT68237401 | G | T | Manufacturing Engineering |
-| 3 | AHD26818801 | G | S | Procurement |
-| 4 | EPM57964301 | G | D | Procurement |
-| 5 | APK23572301 | T | P | R&D |
-| 6 | EMT73633001 | G | D | Procurement |
-```
-
-> Q13을 이미 `COMMIT`한 PC에서는 이력이 한 행 더 나옵니다(아래 6-4의 건수도 하나 더 많습니다).
-
-```sql mat_staff 창
+```sql hr_staff 창
 ROLLBACK;
-```
-
-```result
-ROLLBACK
 ```
 
 ### 6-4. 승인자라도 막히는 것 {keep}
 
 승인자라도 **허락된 컬럼 밖**과 **이력 수정·삭제**는 막힙니다.
 
-```sql mat_staff 창
-UPDATE part_master
-   SET status_code = 1
- WHERE part_no = 'EMT73633001';
+```sql hr_staff 창
+UPDATE employees
+   SET salary = 8000
+ WHERE employee_id = 178;
 ```
 
 ```error
-ERROR:  permission denied for table part_master
+ERROR:  permission denied for table employees
 ```
 
-```sql mat_staff 창
-UPDATE uit_change_history
-   SET change_reason = '사유 수정'
- WHERE change_id = 4;
-```
-
-```error
-ERROR:  permission denied for table uit_change_history
-```
-
-```sql mat_staff 창
-DELETE FROM uit_change_history
- WHERE change_id = 4;
+```sql hr_staff 창
+UPDATE job_history
+   SET end_date = CURRENT_DATE
+ WHERE employee_id = 101;
 ```
 
 ```error
-ERROR:  permission denied for table uit_change_history
+ERROR:  permission denied for table job_history
+```
+
+```sql hr_staff 창
+DELETE FROM job_history
+ WHERE employee_id = 101;
+```
+
+```error
+ERROR:  permission denied for table job_history
 ```
 
 ### 6-4. 이력은 그대로 남았습니다 {keep}
 
-```sql mat_staff 창
+```sql hr_staff 창
 SELECT COUNT(*) AS cnt
-  FROM uit_change_history;
+  FROM job_history;
 ```
 
 ```result
 | cnt |
 | --- |
-| 5 |
+| 10 |
 ```
 
 Day 4 4교시의 「DELETE 대신 상태 변경, 이력 덮어쓰기 금지」는 사람이 지켜야 할 규칙입니다. ==권한으로 막아 두면 규칙을 잊어도 DB가 지켜 줍니다.==
@@ -1375,29 +1364,30 @@ Day 4 4교시의 「DELETE 대신 상태 변경, 이력 덮어쓰기 금지」�
 
 ```sql postgres 창
 SELECT u.usr AS 계정
-     , has_table_privilege(u.usr, 'bom.part_master', 'SELECT')        AS 마스터_조회
-     , has_column_privilege(u.usr, 'bom.part_master', 'uit', 'UPDATE') AS uit_수정
-     , has_table_privilege(u.usr, 'bom.uit_change_history', 'INSERT') AS 이력_기록
-     , has_table_privilege(u.usr, 'bom.uit_change_history', 'UPDATE') AS 이력_수정
-     , has_table_privilege(u.usr, 'bom.uit_change_history', 'DELETE') AS 이력_삭제
-  FROM (VALUES ('agent_bot'), ('mat_staff'), ('dcl_test')) AS u(usr)
+     , has_table_privilege(u.usr, 'hr.employees', 'SELECT')                   AS 직원_조회
+     , has_column_privilege(u.usr, 'hr.employees', 'department_id', 'UPDATE') AS 부서_수정
+     , has_table_privilege(u.usr, 'hr.job_history', 'INSERT')                 AS 이력_기록
+     , has_table_privilege(u.usr, 'hr.job_history', 'UPDATE')                 AS 이력_수정
+     , has_table_privilege(u.usr, 'hr.job_history', 'DELETE')                 AS 이력_삭제
+  FROM (VALUES ('hr_bot'), ('hr_staff'), ('dcl_test')) AS u(usr)
  ORDER BY u.usr;
 ```
 
 ```result
-| 계정 | 마스터_조회 | uit_수정 | 이력_기록 | 이력_수정 | 이력_삭제 |
+| 계정 | 직원_조회 | 부서_수정 | 이력_기록 | 이력_수정 | 이력_삭제 |
 | --- | --- | --- | --- | --- | --- |
-| agent_bot | t | f | f | f | f |
 | dcl_test | t | f | f | f | f |
-| mat_staff | t | t | t | f | f |
+| hr_bot | t | f | f | f | f |
+| hr_staff | t | t | t | f | f |
 ```
 
 - `FROM (VALUES …) AS u(usr)`는 계정 이름 3개를 **임시 표**로 만든 것입니다. 계정마다 한 행씩 권한 확인 함수를 실행합니다.
 - 이 표를 6-1의 설계표와 비교해, ==설계한 대로 권한이 들어갔는지 확인하는 것까지가 권한 작업==입니다.
 
 :::teacher 강사 확인
-- Day 4 5교시(Python 연동)에서 psycopg 접속 정보를 `postgres`가 아니라 `agent_bot`으로 바꾸면, 6교시 `check_shortage`가 조회만 할 수 있음을 직접 확인할 수 있습니다. 6교시에서 결품 기록 테이블에 INSERT해야 하면 그 테이블에만 `GRANT INSERT … TO agent_bot;`을 추가하는 식으로 연결하세요(기록 테이블 설계는 7단원 6장 `shortage_alert` 참고).
 - 6-1의 역할 분담은 이 교안의 실습용 설계입니다. 실제 현장의 권한 체계를 설명하는 것은 아니라는 점을 말로 짚어 주세요.
+- 같은 설계를 생산 데이터(에이전트 `agent_bot` / 승인자 `mat_staff`, 스테이터 UIT 정정 + `uit_change_history` INSERT)로 해 보는 문제가 **8장 복습 7·8**입니다. Day 4 5교시(Python 연동)와 잇는 방법은 복습 7 답에 적어 두었습니다.
+- 6-4의 트리거 `secure_employees`(업무 시간 외 변경 금지)는 적재 스크립트에서 꺼 두었으므로 시간과 상관없이 실행됩니다.
 :::
 
 ## 7. 계정 정리 — DROP ROLE
@@ -1437,13 +1427,13 @@ SELECT rolname
 ```result
 | rolname |
 | --- |
-| agent_bot |
-| bom_reader |
-| mat_staff |
+| hr_bot |
+| hr_read |
+| hr_staff |
 | postgres |
 ```
 
-- 확인 문제를 풀었다면 `hr_viewer`, `hr_read`도 보입니다. 같은 순서(`DROP OWNED BY` → `DROP ROLE`)로 지울 수 있습니다.
+- 확인 문제를 풀었다면 `bom_reader`, `bom_viewer`도 보입니다. 같은 순서(`DROP OWNED BY` → `DROP ROLE`)로 지울 수 있습니다.
 - 2-3에서 회수한 PUBLIC 접속 권한은 `GRANT CONNECT ON DATABASE bom_lab TO PUBLIC;`로 되돌릴 수 있습니다. 회수한 상태로 두면 이후 새 계정마다 `GRANT CONNECT`가 필요합니다.
 
 ### 7-2. DROP OWNED BY는 그 롤이 「주인인 객체」도 지웁니다 {keep}
@@ -1461,24 +1451,31 @@ DROP ROLE 지울롤;                        -- ③ 롤 삭제
 :::
 
 :::teacher 강사 확인
-- **롤은 서버 전체, 권한은 객체마다** 저장됩니다. `schema_postgres.sql`을 다시 실행하면(`DROP SCHEMA bom CASCADE`) `bom` 스키마·테이블에 준 권한과 5-3의 기본 권한은 함께 사라지지만, `bom_reader`·`agent_bot`·`mat_staff` 롤은 남습니다(재적재 후 `has_table_privilege('bom_reader', 'bom.part_master', 'SELECT')` = `f`, `pg_default_acl` 0행 확인). 이때 `CREATE ROLE`부터 다시 실행하면 `role "…" already exists` 오류가 나므로, `GRANT` 문만 다시 실행하게 하세요.
+- **롤은 서버 전체, 권한은 객체마다** 저장됩니다. `hr_postgres.sql`을 다시 실행하면(`DROP SCHEMA hr CASCADE`) `hr` 스키마·테이블에 준 권한과 5-3의 기본 권한은 함께 사라지지만, `hr_read`·`hr_bot`·`hr_staff` 롤은 남습니다(재적재 후 `has_table_privilege('hr_read', 'hr.employees', 'SELECT')` = `f`, `pg_default_acl` 0행 확인). 이때 `CREATE ROLE`부터 다시 실행하면 `role "…" already exists` 오류가 나므로, `GRANT` 문만 다시 실행하게 하세요. `schema_postgres.sql`(`bom`)과 `bom_reader`도 마찬가지입니다.
 - 2-3에서 회수한 PUBLIC 접속 권한은 `GRANT CONNECT ON DATABASE bom_lab TO PUBLIC;`로 되돌릴 수 있습니다. 회수한 상태로 두면 이후 새 계정마다 `GRANT CONNECT`가 필요합니다.
-- 실습 계정을 모두 지우려면 `12. DCL.sql` 맨 아래 「정리」 블록을 실행합니다.
+- 수업이 끝난 뒤 실습 롤을 모두 지우려면 `postgres` 창에서 아래를 실행합니다(만들지 않은 롤은 목록에서 빼세요. 없는 롤이 있으면 `DROP OWNED BY`가 오류로 멈춥니다).
+
+```text 실습 롤 모두 정리 — postgres 창
+DROP OWNED BY hr_bot, hr_staff, hr_read, bom_viewer, bom_reader, agent_bot, mat_staff;
+DROP ROLE hr_bot, hr_staff, hr_read, bom_viewer, bom_reader, agent_bot, mat_staff;
+```
 :::
 
 ## 8. 복습 문제
 
 ### 8-0. 복습 문제 안내 {keep}
 
-> 범위: DCL 전체(사용자 · CONNECT · USAGE · 객체 권한 · 컬럼 권한 · ROLE · REVOKE · DROP ROLE). 관리자 명령은 `postgres` 창, 확인은 문제에 적힌 창(`plan_viewer` 또는 `postgres`)에서 실행합니다. 2-3에서 `bom_lab`의 PUBLIC 접속 권한을 회수한 상태라고 가정합니다.
+> 범위: DCL 전체(사용자 · CONNECT · USAGE · 객체 권한 · 컬럼 권한 · ROLE · REVOKE · DROP ROLE · 최소 권한 설계). 생산 실습 데이터(`bom` 스키마)로 풀고, 테이블 이름에 `bom.`을 붙여 씁니다. 관리자 명령은 `postgres` 창, 확인은 문제에 적힌 창(`plan_viewer`·`agent_bot`·`mat_staff` 또는 `postgres`)에서 실행합니다. 2-3에서 `bom_lab`의 PUBLIC 접속 권한을 회수한 상태라고 가정합니다.
 
-```icons 여섯 문항
+```icons 여덟 문항
 user-plus | 1 · 계정 · 권한 3개 | 생산계획 조회 계정 plan_viewer | rose
 ban | 2 · 오류 읽기 | 받지 않은 테이블 조회 | plum
 columns-3 | 3 · 컬럼 권한 | vendor 세 컬럼만 | lime
 users | 4 · ROLE · 컬럼 UPDATE | 구매 담당 롤 mat_role | ivory
 search | 5 · (심화) 권한 조회 | role_table_grants에 안 보이는 것 | plum
 trash-2 | 6 · DROP ROLE | 계정 정리 | hot
+bot | 7 · (실무) 에이전트 계정 | agent_bot — 조회만 | rose
+shield-check | 8 · (실무) 승인자 계정 | mat_staff — UIT 정정 + 이력 INSERT | lime
 ```
 
 ### 8-1. 복습 1 {keep}
@@ -1545,15 +1542,62 @@ ERROR:  permission denied for table vendor
 
 ```error 출력 결과 — DROP ROLE plan_viewer; 첫 실행
 ERROR:  role "plan_viewer" cannot be dropped because some objects depend on it
-DETAIL:  privileges for schema bom
-privileges for column vendor_code of table vendor
-privileges for column vendor_name of table vendor
-privileges for column country of table vendor
-privileges for table production_plan
-privileges for database bom_lab
+DETAIL:  privileges for database bom_lab
+privileges for schema bom
+privileges for table bom.production_plan
+privileges for column vendor_code of table bom.vendor
+privileges for column vendor_name of table bom.vendor
+privileges for column country of table bom.vendor
 ```
 
-### 8-6. 복습 1 · 2 답 {keep}
+### 8-6. 복습 7 {keep}
+
+**7.** (실무) 6장의 계정 나누기를 생산 데이터로 해 봅니다. 해외 업체(V1009)에서 사 오는데 UIT가 G(국내 구매품)로 잘못된 스테이터(`EMT73633001`)를 정정하는 상황(9단원 복습 1 · Q13)입니다. 아래 표대로 `agent_bot`(비밀번호 `agent1234`)과 `mat_staff`(비밀번호 `staff1234`)를 만들고 권한을 주세요. 조회 권한은 5-5의 롤 `bom_reader`로 줍니다(없으면 5-5 [복습] 답의 앞 세 줄로 먼저 만드세요). 그다음 `agent_bot` 창에서 스테이터의 UIT와 조달 업체·국내 여부를 조회하고, UIT 수정과 이력 INSERT가 막히는지 확인하세요.
+
+| 계정 | 맡은 일 | 줄 권한 | 주지 않을 권한 |
+| --- | --- | --- | --- |
+| `agent_bot` | 데이터를 **조회**해 이상을 판단 (Day 4 6교시 `check_shortage` 같은 도구가 이 계정으로 접속) | `bom_reader` | 마스터 수정, 이력 기록 |
+| `mat_staff` | **승인**한 뒤 UIT를 정정하고 **이력을 기록** | `bom_reader` + `part_master.uit` UPDATE + `uit_change_history` INSERT | 다른 컬럼 수정, 이력 수정·삭제 |
+| (누구도) | — | — | `uit_change_history`의 **UPDATE·DELETE** |
+
+### 8-6. 복습 7 — 출력 결과 {keep}
+
+```result agent_bot 창 — 조회 (총 1행)
+| part_no | description_kr | uit | vendor_code | is_domestic | line_type |
+| --- | --- | --- | --- | --- | --- |
+| EMT73633001 | 스테이터 | G | V1009 | N | D |
+```
+
+```error agent_bot 창 — UIT를 D로 수정
+ERROR:  permission denied for table part_master
+```
+
+```error agent_bot 창 — 이력 INSERT
+ERROR:  permission denied for table uit_change_history
+```
+
+해외 업체(`is_domestic = 'N'`)인데 UIT가 G입니다. 에이전트는 여기까지 판단하고, 고치는 일은 승인자 계정이 합니다.
+
+### 8-7. 복습 8 {keep}
+
+**8.** (실무) `mat_staff` 창에서 스테이터의 UIT 정정(G → D)과 이력 INSERT(`change_id`는 `MAX(change_id) + 1`, 부서 `Procurement`)를 한 트랜잭션으로 실행하고, 이력을 확인한 뒤 `ROLLBACK`하세요. 그다음 `mat_staff` 창에서 ① `status_code` 수정 ② 이력 사유(`change_reason`) 수정 ③ 이력 삭제가 막히는지 확인하고, `postgres` 창에서 두 계정의 권한표를 출력하세요.
+
+```result 출력 결과 — ROLLBACK 전 이력 (총 6행 중 마지막 행)
+| change_id | part_no | old_uit | new_uit | changed_by_dept |
+| --- | --- | --- | --- | --- |
+| 6 | EMT73633001 | G | D | Procurement |
+```
+
+```result 출력 결과 — 권한표 (총 2행)
+| 계정 | 마스터_조회 | uit_수정 | 이력_기록 | 이력_수정 | 이력_삭제 |
+| --- | --- | --- | --- | --- | --- |
+| agent_bot | t | f | f | f | f |
+| mat_staff | t | t | t | f | f |
+```
+
+①~③은 모두 `permission denied for table …`이고, `ROLLBACK` 뒤 이력은 **5건** 그대로입니다.
+
+### 8-8. 복습 1 · 2 답 {keep}
 
 :::answer 복습 1 · 2 예시 답안
 ```sql 1 — postgres 창
@@ -1579,7 +1623,7 @@ SELECT part_no, on_hand_qty
 - 2번: `plan_viewer`는 `production_plan`의 SELECT만 받았습니다. 스키마 `USAGE`가 있어 스키마 단계는 통과하고, **테이블** 단계에서 막힙니다.
 :::
 
-### 8-7. 복습 3 · 4 답 {keep}
+### 8-9. 복습 3 · 4 답 {keep}
 
 :::answer 복습 3 · 4 예시 답안
 ```sql 3 — postgres 창
@@ -1615,7 +1659,7 @@ SELECT has_column_privilege('plan_viewer', 'bom.part_sourcing', 'po_price', 'UPD
 - 4번: 한 문장 `GRANT SELECT, UPDATE (po_price, lead_time_days)`에서 `SELECT`는 **테이블 전체**, `UPDATE`는 **두 컬럼**에만 적용됩니다. 괄호는 바로 앞의 권한에만 붙습니다.
 :::
 
-### 8-8. 복습 5 · 6 답 {keep}
+### 8-10. 복습 5 · 6 답 {keep}
 
 :::answer 복습 5 · 6 예시 답안
 ```sql 5 — postgres 창
@@ -1638,6 +1682,95 @@ DROP ROLE mat_role;
 - 6번: `mat_role`을 먼저 지우지 않아도 `plan_viewer`는 삭제됩니다(멤버십은 롤과 함께 사라짐). `mat_role`도 받은 권한이 있으므로 같은 순서로 지웁니다.
 :::
 
+### 8-11. 복습 7 답 {keep}
+
+:::answer 복습 7 예시 답안
+```sql 7 — postgres 창
+CREATE USER agent_bot PASSWORD 'agent1234';
+CREATE USER mat_staff PASSWORD 'staff1234';
+
+GRANT CONNECT ON DATABASE bom_lab TO agent_bot, mat_staff;
+GRANT bom_reader TO agent_bot, mat_staff;
+GRANT UPDATE (uit) ON bom.part_master TO mat_staff;
+GRANT INSERT ON bom.uit_change_history TO mat_staff;
+```
+
+```sql 7 — agent_bot 창
+SET search_path TO bom;
+
+SELECT p.part_no, p.description_kr, p.uit
+     , s.vendor_code, v.is_domestic, s.line_type
+  FROM part_master p
+  JOIN part_sourcing s ON s.part_no = p.part_no
+  JOIN vendor v        ON v.vendor_code = s.vendor_code
+ WHERE p.part_no = 'EMT73633001';
+
+UPDATE part_master
+   SET uit = 'D'
+ WHERE part_no = 'EMT73633001';
+
+INSERT INTO uit_change_history
+VALUES (6, 'EMT73633001', 'G', 'D', 'AI Agent', '해외 벤더 조달 확인', CURRENT_DATE, 'N');
+```
+:::
+
+:::teacher 강사 확인
+- Day 4 5교시(Python 연동)에서 psycopg 접속 정보를 `postgres`가 아니라 `agent_bot`으로 바꾸면, 6교시 `check_shortage`가 조회만 할 수 있음을 직접 확인할 수 있습니다. 6교시에서 결품 기록 테이블에 INSERT해야 하면 그 테이블에만 `GRANT INSERT … TO agent_bot;`을 추가하는 식으로 연결하세요(기록 테이블 설계는 7단원 복습 5번 `shortage_alert` 참고).
+- 복습 7·8은 원본 `bom.part_master`·`bom.uit_change_history`를 씁니다. 9단원 복습 1(Q13)은 사본(`t_part_master`·`t_uit_history`)에서 실행했으므로 원본은 UIT G, 이력 5건 그대로입니다.
+:::
+
+### 8-12. 복습 8 답 ① 정정과 기록 {keep}
+
+:::answer 복습 8 예시 답안 ①
+```sql 8 — mat_staff 창
+SET search_path TO bom;
+BEGIN;
+
+UPDATE part_master
+   SET uit = 'D'
+ WHERE part_no = 'EMT73633001';
+
+INSERT INTO uit_change_history
+SELECT MAX(change_id) + 1, 'EMT73633001', 'G', 'D', 'Procurement',
+       '해외 벤더 조달 확인, UIT 정정', CURRENT_DATE, 'N'
+  FROM uit_change_history;
+
+SELECT change_id, part_no, old_uit, new_uit, changed_by_dept
+  FROM uit_change_history
+ ORDER BY change_id;
+
+ROLLBACK;
+```
+
+- `UPDATE 1`, `INSERT 0 1`. `agent_bot`에서 막혔던 같은 문장이 `mat_staff`에서는 실행됩니다.
+- `change_id`를 `MAX(change_id) + 1`로 구하면, 이력이 몇 건이든 다음 번호가 들어가 PK 중복 오류가 나지 않습니다.
+:::
+
+### 8-12. 복습 8 답 ② 막히는 것 · 권한표 {keep}
+
+:::answer 복습 8 예시 답안 ②
+```sql 8 — mat_staff 창
+UPDATE part_master SET status_code = 1 WHERE part_no = 'EMT73633001';
+UPDATE uit_change_history SET change_reason = '사유 수정' WHERE change_id = 4;
+DELETE FROM uit_change_history WHERE change_id = 4;
+
+SELECT COUNT(*) AS cnt FROM uit_change_history;
+```
+
+```sql 8 — postgres 창
+SELECT u.usr AS 계정
+     , has_table_privilege(u.usr, 'bom.part_master', 'SELECT')        AS 마스터_조회
+     , has_column_privilege(u.usr, 'bom.part_master', 'uit', 'UPDATE') AS uit_수정
+     , has_table_privilege(u.usr, 'bom.uit_change_history', 'INSERT') AS 이력_기록
+     , has_table_privilege(u.usr, 'bom.uit_change_history', 'UPDATE') AS 이력_수정
+     , has_table_privilege(u.usr, 'bom.uit_change_history', 'DELETE') AS 이력_삭제
+  FROM (VALUES ('agent_bot'), ('mat_staff')) AS u(usr)
+ ORDER BY u.usr;
+```
+
+세 문장 모두 `permission denied for table …`(`part_master` / `uit_change_history`)로 막히고, 이력은 5건 그대로입니다. 「이력 덮어쓰기 금지」를 권한으로 지킨 것입니다.
+:::
+
 ## 9. 정리
 
 ### 9-1. 오늘 배운 것 {keep}
@@ -1648,9 +1781,9 @@ DROP ROLE mat_role;
 - **사용자** = LOGIN 속성이 있는 롤. `CREATE USER`(LOGIN 기본) / `CREATE ROLE`(NOLOGIN 기본).
 - **권한 검사 순서**: ① LOGIN 속성 → ② DB의 `CONNECT` → ③ 스키마의 `USAGE` → ④ 테이블 권한(`SELECT`·`INSERT`·`UPDATE`·`DELETE` …).
 - **오류로 위치 찾기**: `not permitted to log in`(LOGIN) / `permission denied for database`(CONNECT) / `permission denied for schema`(USAGE) / `permission denied for table`(객체 권한). 새 계정에서 `does not exist`면 스키마 권한부터 의심합니다.
-- **컬럼 권한**: `GRANT UPDATE (uit) ON …`. 보지 못하게 한 컬럼은 `WHERE`에도 쓸 수 없습니다.
+- **컬럼 권한**: `GRANT UPDATE (phone_number) ON …`. 보지 못하게 한 컬럼은 `WHERE`에도 쓸 수 없습니다.
 - **ROLE**: 권한을 롤에 묶어 `GRANT 롤 TO 사용자;`로 부여. 직접 회수해도 롤로 받은 권한은 남습니다.
-- **ALL TABLES IN SCHEMA**는 지금 있는 테이블만. 앞으로 만들 테이블은 `ALTER DEFAULT PRIVILEGES`.
+- **ALL TABLES IN SCHEMA**는 지금 있는 테이블(뷰 포함)만. 앞으로 만들 테이블은 `ALTER DEFAULT PRIVILEGES`.
 - **최소 권한**: 에이전트는 조회만, 승인자는 필요한 컬럼 수정 + 이력 INSERT, 이력의 UPDATE·DELETE는 아무에게도 주지 않습니다.
 - **DROP ROLE** 전에 `DROP OWNED BY`(필요하면 `REASSIGN OWNED BY` 먼저).
 :::
@@ -1661,15 +1794,15 @@ DROP ROLE mat_role;
 Q. `CREATE ROLE kim PASSWORD '1234';`로 만든 계정으로 접속이 안 되는 이유와 해결 방법은?
 A. `CREATE ROLE`은 기본이 NOLOGIN이라 `role "kim" is not permitted to log in` 오류가 납니다. `ALTER ROLE kim LOGIN;`을 실행하거나 처음부터 `CREATE USER`로 만듭니다.
 
-Q. `GRANT SELECT ON bom.part_master TO kim;`만 실행했더니 `permission denied for schema bom`이 납니다. 무엇이 빠졌나요?
-A. 스키마에 들어갈 권한 `GRANT USAGE ON SCHEMA bom TO kim;`이 빠졌습니다. 스키마 권한 → 테이블 권한 순서로 검사됩니다.
+Q. `GRANT SELECT ON hr.employees TO kim;`만 실행했더니 `permission denied for schema hr`가 납니다. 무엇이 빠졌나요?
+A. 스키마에 들어갈 권한 `GRANT USAGE ON SCHEMA hr TO kim;`이 빠졌습니다. 스키마 권한 → 테이블 권한 순서로 검사됩니다.
 
-Q. `GRANT SELECT ON ALL TABLES IN SCHEMA bom TO bom_reader;` 뒤에 만든 테이블을 `bom_reader` 구성원이 조회하지 못하는 이유는?
-A. `ALL TABLES IN SCHEMA`는 실행한 순간 있던 테이블에만 적용되기 때문입니다. 새 테이블에 `GRANT`를 따로 하거나, 미리 `ALTER DEFAULT PRIVILEGES IN SCHEMA bom GRANT SELECT ON TABLES TO bom_reader;`를 설정해 둡니다.
+Q. `GRANT SELECT ON ALL TABLES IN SCHEMA hr TO hr_read;` 뒤에 만든 테이블을 `hr_read` 구성원이 조회하지 못하는 이유는?
+A. `ALL TABLES IN SCHEMA`는 실행한 순간 있던 테이블에만 적용되기 때문입니다. 새 테이블에 `GRANT`를 따로 하거나, 미리 `ALTER DEFAULT PRIVILEGES IN SCHEMA hr GRANT SELECT ON TABLES TO hr_read;`를 설정해 둡니다.
 
-Q. `REVOKE SELECT ON hr.departments FROM hr_viewer;`가 성공했는데도 `hr_viewer`가 부서를 조회할 수 있습니다. 왜일까요?
-A. `hr_viewer`가 SELECT 권한이 있는 롤(`hr_read`)의 구성원이라 롤의 권한을 물려받기 때문입니다. `REVOKE hr_read FROM hr_viewer;`로 멤버십도 회수해야 합니다.
+Q. `REVOKE USAGE ON SCHEMA hr FROM dcl_test;`가 성공했는데도 `dcl_test`가 `hr`의 테이블을 조회할 수 있습니다. 왜일까요?
+A. `dcl_test`가 `USAGE`·`SELECT` 권한이 있는 롤(`hr_read`)의 구성원이라 롤의 권한을 물려받기 때문입니다. `REVOKE hr_read FROM dcl_test;`로 멤버십도 회수해야 합니다.
 
-Q. 에이전트 계정 `agent_bot`에 `bom_reader`만 준 이유는 무엇인가요?
-A. 에이전트는 조회·판단만 하고, 마스터 정정과 이력 기록은 사람이 승인한 뒤 승인자 계정이 하도록 나누기 위해서입니다(최소 권한 원칙). 잘못된 SQL이 실행되어도 DB가 권한으로 막습니다.
+Q. 에이전트 계정 `hr_bot`에 `hr_read`만 준 이유는 무엇인가요?
+A. 에이전트는 조회·판단만 하고, 직원 정보 수정과 이력 기록은 사람이 승인한 뒤 승인자 계정(`hr_staff`)이 하도록 나누기 위해서입니다(최소 권한 원칙). 잘못된 SQL이 실행되어도 DB가 권한으로 막습니다.
 :::

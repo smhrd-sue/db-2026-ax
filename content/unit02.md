@@ -9,7 +9,7 @@ title: PostgreSQL 설치와 실습 데이터 적재
 - PostgreSQL을 설치하고 SQL Shell (psql)로 접속할 수 있습니다.
 - `schema_postgres.sql`로 실습 DB를 만들고 행 수로 적재를 확인할 수 있습니다.
 - pgAdmin 4에서 첫 쿼리를 실행할 수 있습니다.
-- 복습으로 `hr` 샘플 데이터를 혼자 적재하고 확인할 수 있습니다.
+- 수업 예제 데이터인 `hr` 샘플 데이터를 혼자 적재하고, 테이블의 뜻을 설명할 수 있습니다.
 - 코드표로 품번·UIT·Status·UOM·Supply Type 값의 뜻을 읽을 수 있습니다.
 :::
 
@@ -40,7 +40,7 @@ search | 첫 쿼리 | pgAdmin 4 | hot
 | 4 | 데이터 적재 | SQL Shell (psql) | `bom` 스키마 + 테이블 17개 + 데이터 |
 | 5 | 적재 확인 | SQL Shell (psql) | 테이블별 행 수가 맞는지 확인 |
 | 6 | 첫 쿼리 | pgAdmin 4 | `part_master` 조회 |
-| 7 | 복습 | SQL Shell (psql) | `hr` 스키마 + 테이블 7개 직접 적재 |
+| 7 | 수업 예제 데이터 적재 | SQL Shell (psql) | `hr` 스키마 + 테이블 7개 직접 적재 |
 | 8 | 데이터 탐색 | pgAdmin 4 | 품번·UIT·Status·UOM·Supply Type 코드 읽기 |
 
 ## 2. 설치 전에 알아 둘 것 — 서버와 클라이언트
@@ -834,11 +834,11 @@ SELECT * FROM part_master LIMIT 10;
 3. PK 1개(`part_no + vendor_code + site_code` 복합키), FK 3개(`part_no` → `part_master`, `vendor_code` → `vendor`, `line_type` → `code_line_type`). `schema_postgres.sql`의 `part_sourcing` 정의와 같습니다.
 :::
 
-## 10. 복습 — hr 데이터도 적재하기
+## 10. 수업 예제 데이터 — hr 적재하기
 
 ### 10-1. 같은 순서로 한 번 더 — 파일 준비 {keep}
 
-지금까지 한 순서(**파일 준비 → psql 접속 → `\i` 실행 → 적재 확인**)를 직원·부서 인사(HR) 샘플 데이터로 **한 번 더 혼자** 해 봅니다. 같은 `bom_lab` DB 안에 `hr` 스키마를 하나 더 만듭니다.
+3장부터 SQL 문법은 직원·부서 인사(HR) 데이터로 배우고, 확인 문제·복습 문제는 앞에서 적재한 생산 데이터로 풉니다. 지금까지 한 순서(**파일 준비 → psql 접속 → `\i` 실행 → 적재 확인**)를 HR 데이터로 **한 번 더 혼자** 해 봅니다. 같은 `bom_lab` DB 안에 `hr` 스키마를 하나 더 만듭니다.
 
 :::cols
 ```text 같은 DB에 스키마 하나 더
@@ -959,8 +959,77 @@ ALTER DATABASE bom_lab SET search_path TO bom, hr, public;
 :::teacher 강사 확인
 - `hr_postgres.sql` 머리말 기준: PostgreSQL 13 이상 대상, 16에서 실행 검증. 수업 PC(18)에서 미리 한 번 실행해 확인하세요.
 - 스크립트 머리말에 원본(`github.com/oracle-samples/db-sample-schemas`, MIT License) 표기가 있으므로 배포 시 머리말을 지우지 마세요.
-- 이 스크립트는 `\copy`가 없어 pgAdmin Query Tool에서도 실행할 수 있습니다. 복습 목적상 psql로 진행하고, 시간이 남으면 pgAdmin으로 다시 실행해 보게 해도 됩니다(첫 줄 `DROP SCHEMA … CASCADE`로 처음 상태가 됩니다).
+- 이 스크립트는 `\copy`가 없어 pgAdmin Query Tool에서도 실행할 수 있습니다. 적재 순서를 한 번 더 익히도록 psql로 진행하고, 시간이 남으면 pgAdmin으로 다시 실행해 보게 해도 됩니다(첫 줄 `DROP SCHEMA … CASCADE`로 처음 상태가 됩니다).
 :::
+
+### 10-6. HR 테이블 사전 — 7개 테이블은 각각 무엇인가 {keep}
+
+HR 데이터는 **전 세계에 지사를 둔 가상 회사의 인사 기록**입니다. 3장부터 SQL 예제는 모두 이 데이터로 듭니다.
+
+```rows
+- | 회사에서 궁금한 것 | 테이블 | 담긴 내용
+users | 누가 일하나 | `employees` | 직원 107명의 이름·입사일·급여·직무·상사·부서
+building-2 | 어느 부서인가 | `departments` | 부서 27개의 이름·부서장·근무지
+id-card | 무슨 일을 하나 | `jobs` | 직무 19개의 이름과 급여 범위
+history | 전에는 무슨 일을 했나 | `job_history` | 직무·부서를 바꾼 직원의 이전 기록
+globe | 어디에 있나 | `locations` · `countries` · `regions` | 근무지 주소 → 나라 → 대륙
+eye | 한 번에 보고 싶다 | `emp_details_view` (뷰) | 위 테이블을 미리 이어 붙여 둔 조회용 표
+```
+
+### 10-6. employees — 직원 (107행) {keep}
+
+회사에서 **일하는 사람 한 명당 한 행**입니다. 3장부터 가장 많이 쓰는 테이블입니다.
+
+| 컬럼 | 의미 | 데이터 예와 뜻 |
+| --- | --- | --- |
+| `employee_id` | 직원 번호 | `100` |
+| `first_name` · `last_name` | 이름 · 성 | Steven · King (사장) |
+| `email` · `phone_number` | 회사 메일 아이디 · 전화번호 (가상) | `SKING` · `515.123.4567` |
+| `hire_date` | 입사일 | 2003-06-17 — 2001~2008년 입사자가 있음 |
+| `job_id` | 하는 일 (직무 코드) | `AD_PRES` 사장 · `SA_REP` 영업 사원 · `IT_PROG` 프로그래머 |
+| `salary` | 월 급여 | `24000.00` — 최저 2,100 ~ 최고 24,000, 평균 약 6,462 |
+| `commission_pct` | 판매 수당 비율 | `0.20` → 매출의 20%. **영업 직원 35명만** 값이 있고 나머지는 비어 있음(NULL) |
+| `manager_id` | 직속 상사의 직원 번호 | `100` → Steven King이 상사. 사장 한 명만 비어 있음 |
+| `department_id` | 소속 부서 | `90` 임원실 — 부서가 없는 직원이 1명(178번) |
+
+> 비어 있는 값(NULL)이 일부러 섞여 있어서 `IS NULL`·`COUNT(컬럼)`·`OUTER JOIN`을 배울 때 좋은 예가 됩니다.
+
+### 10-6. departments · jobs — 부서와 직무 {keep}
+
+`departments` (27행) — **회사의 부서**입니다. 직원이 있는 부서는 11개이고, 나머지 16개는 부서장도 직원도 없는 빈 부서입니다.
+
+| 컬럼 | 의미 | 데이터 예와 뜻 |
+| --- | --- | --- |
+| `department_id` · `department_name` | 부서 번호 · 이름 | `50` Shipping(배송, 직원 45명) · `80` Sales(영업, 34명) |
+| `manager_id` | 부서장의 직원 번호 | `121` — 빈 부서는 비어 있음 |
+| `location_id` | 부서가 있는 근무지 | `1700` 시애틀 — 대부분의 부서가 여기에 있음 |
+
+`jobs` (19행) — **직무와 그 직무의 급여 범위**입니다.
+
+| 컬럼 | 의미 | 데이터 예와 뜻 |
+| --- | --- | --- |
+| `job_id` · `job_title` | 직무 코드 · 이름 | `SA_REP` Sales Representative(30명) · `ST_CLERK` Stock Clerk(20명) |
+| `min_salary` · `max_salary` | 이 직무의 최저 · 최고 급여 | `6000` ~ `12008` — 직원 급여가 범위 안에 있는지 비교할 때 씀 |
+
+### 10-6. job_history · 근무지 — 이력과 위치 {keep}
+
+`job_history` (10행) — 직원이 **직무나 부서를 바꾸면 이전 기록**이 한 행 남습니다. 직원 7명의 기록이 있습니다.
+
+| 컬럼 | 의미 | 데이터 예와 뜻 |
+| --- | --- | --- |
+| `employee_id` | 직원 번호 | `101` Neena Kochhar |
+| `start_date` · `end_date` | 그 직무를 맡았던 기간 | 1997-09-21 ~ 2001-10-27 |
+| `job_id` · `department_id` | 그때의 직무 · 부서 | `AC_ACCOUNT` 회계 담당 → 이후 `AC_MGR` → 지금은 `AD_VP` 부사장 |
+
+`locations` (23행) → `countries` (25행) → `regions` (4행) — **근무지 → 나라 → 대륙** 순서로 이어집니다.
+
+| 테이블 | 의미 | 데이터 예와 뜻 |
+| --- | --- | --- |
+| `locations` | 근무지 주소 (`city`, `state_province`, `country_id`) | `1700` Seattle · `2500` Oxford · `1200` Tokyo |
+| `countries` | 나라 (`country_id`, `country_name`, `region_id`) | `US` 미국 · `UK` 영국 · `JP` 일본 |
+| `regions` | 대륙 (`region_id`, `region_name`) | `1` Europe · `2` Americas · `3` Asia · `4` Middle East and Africa |
+
+> `emp_details_view`는 직원·부서·직무·근무지·나라·대륙을 미리 이어 붙인 **뷰**(16개 컬럼)입니다. 조인을 배운 뒤(5장) 결과를 비교해 보는 데 씁니다.
 
 ## 11. 자주 하는 실수와 해결
 
@@ -988,7 +1057,7 @@ ALTER DATABASE bom_lab SET search_path TO bom, hr, public;
 :::summary
 - PostgreSQL = **서버**(데이터 보관·실행) + **psql**(명령줄) + **pgAdmin 4**(그래픽). 기본 계정 `postgres`, 포트 `5432`.
 - 실습 DB `bom_lab` 안의 **`bom` 스키마**에 테이블 17개, 총 360행을 적재했습니다.
-- 복습으로 같은 DB의 **`hr` 스키마**에 테이블 7개, 총 215행을 적재했습니다. 두 스키마를 함께 쓰려면 `SET search_path TO bom, hr;`.
+- 수업 예제 데이터로 같은 DB의 **`hr` 스키마**에 테이블 7개, 총 215행을 적재했습니다. 3장부터 문법은 `hr`로 배우고, 확인·복습 문제는 `bom`으로 풉니다. 두 스키마를 함께 쓰려면 `SET search_path TO bom, hr;`.
 - 적재 스크립트는 `\copy`(psql 전용)를 쓰므로 **적재는 psql**, **조회는 pgAdmin**.
 - 테이블 이름만 쓰려면 `SET search_path TO bom;`.
 - `schema_postgres.sql` = 1장 6. **물리적 모델링의 결과물**. 1장 ERD의 PK·FK가 여기서 실제 제약조건이 됩니다.
@@ -1017,7 +1086,7 @@ A. ① 쿼리 창이 `bom_lab` DB에 접속했는지 ② `SET search_path TO bom
 :::teacher 강사 확인
 - 운영안 Day 1 2H(생산 도메인: 품목 관리)에 해당합니다. 아래 쿼리 결과는 제공 CSV를 PostgreSQL 16에 `schema_postgres.sql`로 적재해 실행한 값과 같습니다.
 - JOIN·GROUP BY가 들어 있지만 이 시간의 목표는 **문법이 아니라 코드 값의 뜻을 읽는 것**입니다. 쿼리는 복사해 실행하고 결과표를 함께 읽습니다.
-- 본문의 「4단원 1-2·2-3」, 「데이터 사전(3장)」, 「Day 2 5교시(5장)」는 다른 단원 원고를 가리킵니다. 최종 단원 번호에 맞춰 확인해 주세요.
+- 본문의 「데이터 사전(3장)」, 「Day 2 5교시(5장)」는 다른 단원 원고를 가리킵니다. 최종 단원 번호에 맞춰 확인해 주세요.
 :::
 
 ### 13-1. 이번 시간에 읽을 다섯 가지 {keep}
@@ -1229,7 +1298,7 @@ SELECT * FROM code_status ORDER BY status_code;
 ```
 
 - `active_flag`가 **Inactive(1·5·6)** 인 품번은 더 쓰지 않는 품번입니다(5·6은 BOM 추가·변경 불가, 1은 발주·입고·서비스 불가). 이런 부품이 BOM에 남아 있으면 품질 이슈입니다(Day 2 6교시).
-- 품목 마스터에는 **1(폐기) 1개, 3(승인) 67개**만 있습니다(4단원 2-3).
+- 품목 마스터에는 **1(폐기) 1개, 3(승인) 67개**만 있습니다.
 
 ### 13-5. UOM — 수량의 단위 {keep}
 
@@ -1254,7 +1323,7 @@ SELECT p.uom, u.name, u.remark_kr
 ```
 :::
 
-BOM의 `qty_per`는 **자식 품번의 UOM 기준**입니다. 우레탄 발포액 `6.5`는 6.5개가 아니라 ==6.5kg==입니다. 단위가 다른 수량을 그냥 더하면 4단원 1-2의 통화 문제와 같은 일이 생깁니다.
+BOM의 `qty_per`는 **자식 품번의 UOM 기준**입니다. 우레탄 발포액 `6.5`는 6.5개가 아니라 ==6.5kg==입니다. 단위가 다른 수량을 그냥 더하면 원화와 달러 단가를 섞어 더하는 것과 같은 일이 생깁니다.
 
 ### 13-6. Supply Type — BOM에서 자재가 공급되는 방식 {keep}
 
